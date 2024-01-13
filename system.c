@@ -417,6 +417,7 @@ int main(void)
 
         }
         else {
+        if (cycle_count > 8) cpu.IRQ = 0;
         //printf("\n\nø2 - %d\n", cur_cycle++);
         psg_tick_82c54(&system_psg);
         //system_psg_samples[system_psg_samples_count++] = psg_getsample(&system_psg);

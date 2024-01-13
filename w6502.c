@@ -144,8 +144,8 @@ uint8_t op_modes[256] = {
 /*9*/ R  ,IZY, IZ,IMP, ZX, ZX, ZY, Z ,IMP, AY,IMP,IMP, A , AX, AX, R ,
 /*A*/IMD ,IZX,IMD,IMP, Z , Z , Z , Z ,IMP,IMD,IMP,IMP, A , A , A , R ,
 /*B*/ R  ,IZY, IZ,IMP, ZX, ZX, ZY, Z ,IMP, AY,IMP,IMP, AX, AX, AY, R ,
-/*C*/IMD ,IZX,IMP,IMP, Z , Z , Z , Z ,IMP,IMD,IMP,IMP, A , A , A , R ,
-/*D*/ R  ,IZY, IZ,IMP,IMP, ZX, ZX, Z ,IMP, AY, SH,IMP,IMP, AX, AX, R ,
+/*C*/IMD ,IZX,IMP,IMP, Z , Z , Z , Z ,IMP,IMD,IMP,HLD, A , A , A , R ,
+/*D*/ R  ,IZY, IZ,IMP,IMP, ZX, ZX, Z ,IMP, AY, SH,HLD,IMP, AX, AX, R ,
 /*E*/IMD ,IZX,IMP,IMP, Z , Z , Z , Z ,IMP,IMD,IMP,IMP, A , A , A , R ,
 /*F*/ R  ,IZY, IZ,IMP,IMP, ZX, ZX, Z ,IMP, AY, SL,IMP,IMP, AX, AX, R ,
 };
@@ -949,7 +949,6 @@ uint8_t tsb_p2(CPU *cpu, uint8_t operand) { }
 uint8_t wai_p1(CPU *cpu,ACCESS *result) { }
 uint8_t wai_p2(CPU *cpu, uint8_t operand) {
     if (cpu->IRQ || cpu->NMI || cpu->RESET) {
-        cpu->IRQ = 0;
         cpu_opend(cpu);
     }
 }

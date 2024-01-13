@@ -10,44 +10,9 @@
 .var keyboard_cache $14
 .var line_cur       $20
 
-.org [$8000]
+.org [$1000]
 _nmi
-_reset
 
-# Mute Audio
-ldx 7
-_muteloop
-    stz [$70F0+X]
-dec X; bpl (muteloop)
-
-ldx $00
-__clrscreen
-    stz [$0200+X]
-    lda ' '
-    sta [$6C00+X]; sta [$6D00+X]; sta [$6E00+X]; sta [$6F00+X]
-    lda $F0
-    sta [$6800+X]; sta [$6900+X]; sta [$6A00+X]; sta [$6B00+X]
-inc X; bne (clrscreen)
-
-ldx $00
-__printheader
-    lda [tHeader+X]; beq (break)
-    sta [$6C00+X]
-    
-    lda [tHeaderColor+X]
-    sta [$6800+X]
-    
-    inc X; bra (printheader)
-___break
-
-stz <line_buffer_i>
-ldx 4
-__keyzero
-    stz <keyboard_cache+X>
-dec X; bpl (keyzero)
-_fim
-cli
-bra (fim)
 
 _irq
 
@@ -205,7 +170,9 @@ txa; sta [<$00>+Y]
 
 inc <char_timer>
 
-rti
+#rti
+wai
+jmp [irq]
 
 _Run
     ldy $00
@@ -213,19 +180,19 @@ _Run
     
     __interpret
     # The Vector goes into <$08,$09>
-    lda <$00>; jsr [TextToHex]; bmi (BAD)
+    lda <$80>; jsr [TextToHex]; bmi (BAD)
     asl A; asl A; asl A; asl A
     sta <$09>
-    lda <$01>; jsr [TextToHex]; bmi (BAD)
+    lda <$81>; jsr [TextToHex]; bmi (BAD)
     ora <$09>; sta <$09>
     
-    lda <$02>; cmp $F2; beq (poke); jsr [TextToHex]; bmi (BAD)
+    lda <$82>; cmp $F2; beq (poke); jsr [TextToHex]; bmi (BAD)
     asl A; asl A; asl A; asl A
     sta <$08>
-    lda <$03>; jsr [TextToHex]; bmi (BAD)
+    lda <$83>; jsr [TextToHex]; bmi (BAD)
     ora <$08>; sta <$08>
     
-    lda <$04>; cmp $F2; bne (BAD)
+    lda <$84>; cmp $F2; bne (BAD)
     jsr [peek]
     jmp [cmdend]
     
@@ -233,16 +200,16 @@ _Run
     lda <$09>; sta <$10>
     ldy 3; jsr [read]
     
-    lda <$00>; jsr [TextToHex]; bmi (BAD)
+    lda <$80>; jsr [TextToHex]; bmi (BAD)
     asl A; asl A; asl A; asl A
     sta <$09>
-    lda <$01>; jsr [TextToHex]; bmi (BAD)
+    lda <$81>; jsr [TextToHex]; bmi (BAD)
     ora <$09>; sta <$09>
     
-    lda <$02>; jsr [TextToHex]; bmi (BAD)
+    lda <$82>; jsr [TextToHex]; bmi (BAD)
     asl A; asl A; asl A; asl A
     sta <$08>
-    lda <$03>; jsr [TextToHex]; bmi (BAD)
+    lda <$83>; jsr [TextToHex]; bmi (BAD)
     ora <$08>; sta <$08>
     
     lda <$10>; sta [<$08>]
@@ -255,13 +222,13 @@ rts
         ldx $00
         ___loop
             lda [line_buffer+Y]; beq (break)
-            sta <$00+X>; inc X
+            sta <$80+X>; inc X
 
             cmp $80; bpl (break)
             inc Y
         bra (loop)
         ___break
-        stz <$00+X>
+        stz <$80+X>
     rts
     __peek
         lda [<$08>]; jsr [HexToText]
@@ -319,25 +286,14 @@ __invalid
     lda $80; rts 
 
 _Clear
-    ldy $00
+    ldy $1f
     __loop
-        lda [line_buffer+Y]; beq (break)
-        lda 0; sta [line_buffer+Y]; lda ' '; sta [<line_cur>+Y]
-    inc Y; bra (loop)
+        lda 0; sta [line_buffer+Y]
+        lda ' '; sta [<line_cur>+Y]
+    dec Y; bpl (loop)
     ___break
     stz <line_buffer_i>
 rts
-
-# Text
-_tHeader
-.byte $D1
-.byte 'foxmon'
-.byte $D1,$D1,$D1,$D1,$D1,$D1,$D1,$D1,$00
-
-_tHeaderColor
-.byte $0F
-.byte $0F,$0F,$0F,$0F,$0F,$0F
-.byte $F8,$8C,$CE,$E4,$43,$39,$9B,$B0
 
 _tHex
 .byte '0123456789abcdef'
@@ -377,9 +333,79 @@ _kAlt
 .byte $60,'@',';',$63,$64,'3',$66,$67,$68,'8',$6A,$6B,$6C,$6D,$6E,'9'
 .byte '0','1','4',$73,'5','7',$76,'2',$78,'6',$7A,$7B,$7C,$7D,$7E,$7F
 
+
+.pad [$2000]
+.org [$9000]
+
+_reset
+# Mute Audio
+ldx 7
+_muteloop
+    stz [$70F0+X]
+dec X; bpl (muteloop)
+
+ldx $00
+__clrscreen
+    stz [$0200+X]
+    lda ' '
+    sta [$6C00+X]; sta [$6D00+X]; sta [$6E00+X]; sta [$6F00+X]
+    lda $F0
+    sta [$6800+X]; sta [$6900+X]; sta [$6A00+X]; sta [$6B00+X]
+inc X; bne (clrscreen)
+
+ldx $00
+__printheader
+    lda [tHeader+X]; beq (break)
+    sta [$6C00+X]
+    
+    lda [tHeaderColor+X]
+    sta [$6800+X]
+    
+    inc X; bra (printheader)
+___break
+
+stz <line_buffer_i>
+ldx 4
+__keyzero
+    stz <keyboard_cache+X>
+dec X; bpl (keyzero)
+
+ldx $00
+_copyloop
+    lda [$8000+X]; sta [$1000+X]
+    lda [$8100+X]; sta [$1100+X]
+    lda [$8200+X]; sta [$1200+X]
+    lda [$8300+X]; sta [$1300+X]
+    lda [$8400+X]; sta [$1400+X]
+    lda [$8500+X]; sta [$1500+X]
+    lda [$8600+X]; sta [$1600+X]
+    lda [$8700+X]; sta [$1700+X]
+    lda [$8800+X]; sta [$1800+X]
+    lda [$8900+X]; sta [$1900+X]
+    lda [$8A00+X]; sta [$1A00+X]
+    lda [$8B00+X]; sta [$1B00+X]
+    lda [$8C00+X]; sta [$1C00+X]
+    lda [$8D00+X]; sta [$1D00+X]
+    lda [$8E00+X]; sta [$1E00+X]
+    lda [$8F00+X]; sta [$1F00+X]
+inc X; bne (copyloop)
+
+jmp [irq]
+
+# Text
+_tHeader
+.byte $D1
+.byte 'foxmon'
+.byte $D1,$D1,$D1,$D1,$D1,$D1,$D1,$D1,$00
+
+_tHeaderColor
+.byte $0F
+.byte $0F,$0F,$0F,$0F,$0F,$0F
+.byte $F8,$8C,$CE,$E4,$43,$39,$9B,$B0
+
 .pad [VECTORS]
-.word nmi
 .word reset
-.word irq
+.word reset
+.word reset
 # Other banks
 .pad $8000*15
