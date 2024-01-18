@@ -1150,16 +1150,15 @@ uint8_t mode_abs_ind_p1(CPU *cpu,ACCESS *result) {
             result->address = cpu->PC;
             break;
         case 3:
+            result->type = READ;
+            result->address = cpu->TARGET + extra;
+            break;
         case 4:
             result->type = READ;
-            result->address = cpu->TARGET;
-            cpu->TARGET = (cpu->TARGET & 0xFF00) + ((cpu->TARGET+1) & 0x00FF);
+            result->address = cpu->TARGET+1 + extra;
             break;
         case 5:
-            result->type = READ;
-            result->address = cpu->DL;
-            break;
-        default:
+            cpu->TARGET = cpu->DL;
             phase_1[op_codes[cpu->I]](cpu, result);
     }
 }
@@ -1175,10 +1174,6 @@ uint8_t mode_abs_ind_p2(CPU *cpu, uint8_t operand) {
         case 4:
             cpu->DL = cpu->DL + (operand << 8); break;
         case 5:
-            cpu->TARGET = cpu->DL;
-            cpu->DL = operand;
-            break;
-        default:
             phase_2[op_codes[cpu->I]](cpu, operand);
             cpu_opend(cpu);
     }
