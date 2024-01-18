@@ -9,12 +9,80 @@
 
 .var keyboard_cache $14
 .var line_cur       $20
+.var serial_active  $30
 
 .org [$1000]
 _nmi
 
+_start
+#-----------------------------------------
+# Serial Cart Detection and 16c550 init
+#-----------------------------------------
+stz <serial_active>
+_serialcheck
+    # change to cart bank
+    lda $40; sta [$70D0]
+    # check if MCR works as expected
+    # MCR should store a value but set the top 3 bits to 0
+    lda $ff; sta [$8004]
+    lda $1f; cmp [$8004]; bne (noserial)
+    stz [$8004]; lda [$8004]; bne (noserial)
+    
+    __yesserial
+    # we assume we have a serial cart
+    lda $ff; sta <serial_active>
+    # setting baudrate and word length
+    lda $80; sta [$8003]                # enable divisor latch
+    lda $0D; sta [$8000]; stz [$8001]   # set divisor
+    lda %0_0_000_0_11; sta [$8003]      # disable divisor latch and set word length to 8, 1 stop bit
 
+    # Clear and enable Enable FIFOs
+    lda %00_00_0_11_1; sta [$8002]
+    
+    # Serial Enabled Icon
+    lda $F8; sta [$681F]
+    lda 's'; sta [$6C1F]
+    
+    __noserial
+    # return to bank 0
+    stz [$70D0]
 _irq
+bra (noserial)
+lda <serial_active>; beq (noserial)
+    lda $40; sta [$70D0]
+    lda [$8005]
+    cmp 1; bne (noserial)
+    lda [$8000]; cmp $01; bne (noserial)
+    lda $01; sta [$8000]
+    
+    __wait
+    ldx $00
+    lda $01
+    ldy $02
+    __waitloop
+        cmp [$8005]; beq (yesserial)
+    inc X; bne (waitloop)
+    bra (break)
+    __yesserial
+    lda [$8000]; sta [$0000+Y]; dec Y; bpl (waitloop)
+    
+    ldx $00
+    __receiveloop
+        lda $01
+        ___wait
+        cmp [$8005]; bne (wait)
+        
+        lda [$8000]; sta [$5000+X]
+    inc X; bne (receiveloop)
+    
+    #lda <$02>; sta [$70D0]
+    #lda [$5000+X]; sta [<$00>+X]
+    lda $40; sta [$70D0]
+    
+    bra (wait)
+__break
+stz [$70D0]
+__noserial
 
 lda <line_buffer_i>
 lda $E0; sta <line_cur>
@@ -180,6 +248,9 @@ _Run
     
     __interpret
     # The Vector goes into <$08,$09>
+    lda <$80>; cmp $F2; bne (nojump)
+    jmp [jump]
+    __nojump
     lda <$80>; jsr [TextToHex]; bmi (BAD)
     asl A; asl A; asl A; asl A
     sta <$09>
@@ -193,8 +264,7 @@ _Run
     ora <$08>; sta <$08>
     
     lda <$84>; cmp $F2; bne (BAD)
-    jsr [peek]
-    jmp [cmdend]
+    jsr [peek]; jmp [cmdend]
     
     __poke
     lda <$09>; sta <$10>
@@ -229,6 +299,36 @@ rts
         bra (loop)
         ___break
         stz <$80+X>
+    rts
+    __jump
+        ldy 1; jsr [read]
+        
+        lda <$80>; jsr [TextToHex]; bmi (BAD)
+        asl A; asl A; asl A; asl A
+        sta <$09>
+        lda <$81>; jsr [TextToHex]; bmi (BAD)
+        ora <$09>; sta <$09>
+        
+        lda <$82>; jsr [TextToHex]; bmi (BAD)
+        asl A; asl A; asl A; asl A
+        sta <$08>
+        lda <$83>; jsr [TextToHex]; bmi (BAD)
+        ora <$08>; sta <$08>
+        
+        lda <$84>; beq (samejump)
+        
+        lda <$84>; jsr [HexToText]; bmi (BAD)
+        asl A; asl A; asl A; asl A
+        sta <$07>
+        lda <$85>; jsr [HexToText]; bmi (BAD)
+        ora <$07>
+        sta <$07>
+        ___bankjump
+        lda <$09>; sta [$70D0]
+        jmp [[$0007]]
+        
+        ___samejump
+        jmp [[$0008]]
     rts
     __peek
         lda [<$08>]; jsr [HexToText]
@@ -390,7 +490,7 @@ _copyloop
     lda [$8F00+X]; sta [$1F00+X]
 inc X; bne (copyloop)
 
-jmp [irq]
+jmp [start]
 
 # Text
 _tHeader
