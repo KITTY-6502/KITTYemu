@@ -25,7 +25,9 @@ const uint32_t tick_interval = 1000/50;
 uint32_t next_time = 0;
 
 uint8_t system_ram[0x7000];
-uint8_t system_rom[0x8000];
+uint8_t *system_rom;
+int     system_rom_size;
+uint8_t bank_reg;
 PSG     system_psg;
 
 uint8_t system_psg_samples[2000000];
@@ -163,6 +165,27 @@ uint8_t system_access(CPU *cpu,ACCESS *result) {
         if (!(result->address & 0x80)) {
             operand = 0x00;
             int row = (result->address & 0xF0) >> 4;
+            uint8_t alt = os_keyboard[SDL_SCANCODE_LALT] || os_keyboard[SDL_SCANCODE_RALT];
+            
+            int alt_list[10] = {
+                SDL_SCANCODE_0,
+                SDL_SCANCODE_1,
+                SDL_SCANCODE_2,
+                SDL_SCANCODE_3,
+                SDL_SCANCODE_4,
+                SDL_SCANCODE_5,
+                SDL_SCANCODE_6,
+                SDL_SCANCODE_7,
+                SDL_SCANCODE_8,
+                SDL_SCANCODE_9,
+            };
+            
+            for (int i = 0; i < 10; i++) {
+                if (os_keyboard[alt_list[i]]) {
+                    alt = 1;
+                }
+            }
+            
             switch (row) {
                 case 0:
                     if (os_keyboard[SDL_SCANCODE_ESCAPE]) operand |= 0x01;
@@ -174,9 +197,18 @@ uint8_t system_access(CPU *cpu,ACCESS *result) {
                     if (os_keyboard[SDL_SCANCODE_I]) operand |= 0x40;
                     if (os_keyboard[SDL_SCANCODE_O]) operand |= 0x80;
                     
+                    // numbers
+                    if (os_keyboard[SDL_SCANCODE_2]) operand |= 0x02;
+                    if (os_keyboard[SDL_SCANCODE_3]) operand |= 0x04;
+                    if (os_keyboard[SDL_SCANCODE_4]) operand |= 0x08;
+                    if (os_keyboard[SDL_SCANCODE_5]) operand |= 0x10;
+                    if (os_keyboard[SDL_SCANCODE_7]) operand |= 0x20;
+                    if (os_keyboard[SDL_SCANCODE_8]) operand |= 0x40;
+                    if (os_keyboard[SDL_SCANCODE_9]) operand |= 0x80;
+                    
                     break;
                 case 1:
-                    if (os_keyboard[SDL_SCANCODE_LALT] || os_keyboard[SDL_SCANCODE_RALT]) operand |= 0x01;
+                    if (alt) operand |= 0x01;
                     if (os_keyboard[SDL_SCANCODE_Q]) operand |= 0x02;
                     if (os_keyboard[SDL_SCANCODE_S]) operand |= 0x04;
                     if (os_keyboard[SDL_SCANCODE_G]) operand |= 0x08;
@@ -184,6 +216,11 @@ uint8_t system_access(CPU *cpu,ACCESS *result) {
                     if (os_keyboard[SDL_SCANCODE_J]) operand |= 0x20;
                     if (os_keyboard[SDL_SCANCODE_K]) operand |= 0x40;
                     if (os_keyboard[SDL_SCANCODE_P]) operand |= 0x80;
+                    
+                    // numbers
+                    if (os_keyboard[SDL_SCANCODE_1]) operand |= 0x02;
+                    if (os_keyboard[SDL_SCANCODE_6]) operand |= 0x10;
+                    if (os_keyboard[SDL_SCANCODE_0]) operand |= 0x80;
                     
                     break;
                 case 2:
@@ -222,10 +259,20 @@ uint8_t system_access(CPU *cpu,ACCESS *result) {
             }
         } else if ( (result->address & 0xF0) >= 0xE0) {
             operand = psg_access(&system_psg, result);
-        } 
-    } else {
+        } else if ( (result->address & 0xF0) == 0xD0) {
+            if (result->type == WRITE) {
+                bank_reg = operand;
+            }
+        }
+    } else { // ROM ACCESS
         if (result->type == READ) {
-            operand = system_rom[result->address - 0x8000];
+            if (bank_reg >= 128) {
+                operand = 0;
+            } else {
+                int local_address = result->address - 0x8000;
+                int rom_address = (local_address + 0x8000*bank_reg) % system_rom_size;
+                operand = system_rom[rom_address];
+            }
         }
     }
     
@@ -265,12 +312,24 @@ int loadrom(char* filename, CPU* cpu)
 {
     FILE *fp;
     fp = fopen(filename, "rb");
-    fread(system_rom, sizeof(uint8_t), 32*1024, fp);
+    
+    // get rom size
+    fseek(fp, 0L, SEEK_END);
+    system_rom_size = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+    if (system_rom_size > 128*32*1024) system_rom_size = 128*32*1024;
+    
+    // load the file into the rom
+    system_rom = realloc(system_rom, system_rom_size * sizeof(int));
+    fread(system_rom, sizeof(uint8_t), system_rom_size, fp);
     fclose(fp);
     
+    bank_reg = 0;
     cpu->C = 0; cpu->IRQ = 0; cpu->NMI = 0; cpu->RESET = 1;
     cpu->P  = 0x24;
     cpu->S  = 0xFD;
+    
+    printf("ROM SIZE %i",system_rom_size);
 }
 
 int quit = 0;

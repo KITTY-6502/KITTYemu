@@ -102,39 +102,40 @@ _keyloop
     cmp [keyboard_cache+X]; bne (change)
     jmp [nochange]
     _change
-        
-    __bit7
-    asl [keyboard_cache+X]; bcs (bit6)
-    bit %1000_0000; beq (bit6)
-    psh A; lda [kKeys7+X]; sta [char_cur]; pul A
-    __bit6
-    asl [keyboard_cache+X]; bcs (bit5)
-    bit %0100_0000; beq (bit5)
-    psh A; lda [kKeys6+X]; sta [char_cur]; pul A
-    __bit5
-    asl [keyboard_cache+X]; bcs (bit4)
-    bit %0010_0000; beq (bit4)
-    psh A; lda [kKeys5+X]; sta [char_cur]; pul A
-    __bit4
-    asl [keyboard_cache+X]; bcs (bit3)
-    bit %0001_0000; beq (bit3)
-    psh A; lda [kKeys4+X]; sta [char_cur]; pul A
-    __bit3
-    asl [keyboard_cache+X]; bcs (bit2)
-    bit %0000_1000; beq (bit2)
-    psh A; lda [kKeys3+X]; sta [char_cur]; pul A
-    __bit2
-    asl [keyboard_cache+X]; bcs (bit1)
-    bit %0000_0100; beq (bit1)
-    psh A; lda [kKeys2+X]; sta [char_cur]; pul A
-    __bit1
-    asl [keyboard_cache+X]; bcs (bit0)
-    bit %0000_0010; beq (bit0)
-    psh A; lda [kKeys1+X]; sta [char_cur]; pul A
+    
     __bit0
-    asl [keyboard_cache+X]; bcs (bitend)
-    bit %0000_0001; beq (bitend)
+    lsr [keyboard_cache+X]; bcs (bit1)
+    bit %0000_0001; beq (bit1)
     psh A; lda [kKeys0+X]; sta [char_cur]; pul A
+    __bit1
+    lsr [keyboard_cache+X]; bcs (bit2)
+    bit %0000_0010; beq (bit2)
+    psh A; lda [kKeys1+X]; sta [char_cur]; pul A
+    __bit2
+    lsr [keyboard_cache+X]; bcs (bit3)
+    bit %0000_0100; beq (bit3)
+    psh A; lda [kKeys2+X]; sta [char_cur]; pul A
+    __bit3
+    lsr [keyboard_cache+X]; bcs (bit4)
+    bit %0000_1000; beq (bit4)
+    psh A; lda [kKeys3+X]; sta [char_cur]; pul A
+    __bit4
+    lsr [keyboard_cache+X]; bcs (bit5)
+    bit %0001_0000; beq (bit5)
+    psh A; lda [kKeys4+X]; sta [char_cur]; pul A
+    __bit5
+    lsr [keyboard_cache+X]; bcs (bit6)
+    bit %0010_0000; beq (bit6)
+    psh A; lda [kKeys5+X]; sta [char_cur]; pul A
+    __bit6
+    lsr [keyboard_cache+X]; bcs (bit7)
+    bit %0100_0000; beq (bit7)
+    psh A; lda [kKeys6+X]; sta [char_cur]; pul A
+    __bit7
+    lsr [keyboard_cache+X]; bcs (bitend)
+    bit %1000_0000; beq (bitend)
+    psh A; lda [kKeys7+X]; sta [char_cur]; pul A
+    
     __bitend
     
     _nochange

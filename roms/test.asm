@@ -186,7 +186,7 @@ _text01
 _text02
 .byte "Running @3Mhz with custom video + sound! "
 _textload
-.byte "Drag & Drop a 32k ROM to run"
+.byte "Drag & Drop a ROM to run!"
 
 .asm frequencies
 
