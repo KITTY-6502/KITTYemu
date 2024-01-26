@@ -1,5 +1,5 @@
 # This test ROM was written for the CapyAsm assembler (smal's weird wip thing)
-# But you can use any assembler you want.
+# But you can use any assembler you want for your own programs
 .cpu 65c02
 
 .var CHR $6C00
@@ -16,6 +16,10 @@
 .var OSC_2    $70E2
 .var OSC_CTRL $70E3
 
+.var zColorCur       $00
+.var zColorTimer     $01
+.var zVolumeCounter  $10
+
 .org [$8000]
 _reset
 
@@ -28,12 +32,9 @@ stz [$70F1]
 stz [$70F2]
 stz [$70F3]
 
-# Make the square waves ring :)
+# Set the frequency for the melodic channels
 ldx 72 #C5
 lda %00_11_010_0; sta [OSC_CTRL]; lda [note_lo+X]; sta [OSC_0]; lda [note_hi+X]; sta [OSC_0];
-
-# Set the waveform
-lda $F0; sta [$70F4]; sta [$70F5]; sta [$70F6]; stz [$70F7]
 
 ldx 76 #E5
 lda %01_11_010_0; sta [OSC_CTRL]; lda [note_lo+X]; sta [OSC_1]; lda [note_hi+X]; sta [OSC_1];
@@ -41,7 +42,11 @@ lda %01_11_010_0; sta [OSC_CTRL]; lda [note_lo+X]; sta [OSC_1]; lda [note_hi+X];
 ldx 79 #G5
 lda %10_11_010_0; sta [OSC_CTRL]; lda [note_lo+X]; sta [OSC_2]; lda [note_hi+X]; sta [OSC_2];
 
-# Fill up the screen with data
+# Set the waveform for erach channel
+lda $F0; sta [$70F4]; sta [$70F5]; sta [$70F6]; stz [$70F7]
+
+
+# Fill up the screen with empty data
 lda ' ' # character
 ldx 0
 __fill_chr
@@ -62,17 +67,14 @@ __fill_pal
     sta [PAL+$0300+X]
 inx; bne (fill_pal)
 
-lda $F8; sta <$00>
-stz <$01>
-stz <$10>
+stz <zVolumeCounter>
 
-
-
+lda $F8; sta <zColorCur>; lda 50; sta <zColorTimer>
 
 _test1
 ldx 0
 __loop
-    lda [text02+X]; beq (end)
+    lda [textSpecs+X]; beq (end)
     sta [CHR+64+X]
     inc X
     bra (loop)
@@ -80,7 +82,7 @@ __end
 _test2
 ldx 0
 __loop
-    lda [textload+X]; beq (end)
+    lda [textLoad+X]; beq (end)
     sta [CHR+320+2+X]
     inc X
     bra (loop)
@@ -122,52 +124,53 @@ bra (fim)
 _irq
 sei
 
-dec <$01>; bne (next)
-    inc <$00>
-    lda 50; sta <$01>
+dec <zColorTimer>; bne (next)
+    inc <zColorCur>
+    lda 50; sta <zColorTimer>
 __next
 
 ldx 0
 __loop
-    lda [text01+X]; beq (end)
+    lda [textWelcome+X]; beq (end)
     sta [$6C00+X]
-    lda <$00>; sta [$6800+X]
+    lda <zColorCur>; sta [$6800+X]
     inc X
     bra (loop)
 __end
 
-# Printing Keyboard to the screen
-lda <$6E>; sta <$21>
+    # Printing Keyboard to the screen
+    lda <$6E>; sta <$21>
 
-lda $0C; sta <$20>
-lda [KEY_1]
-jsr [keyprint]
+    lda $0C; sta <$20>
+    lda [KEY_1]
+    jsr [keyprint]
 
-lda $2C; sta <$20>
-lda [KEY_2]
-jsr [keyprint]
+    lda $2C; sta <$20>
+    lda [KEY_2]
+    jsr [keyprint]
 
-lda $4C; sta <$20>
-lda [KEY_3]
-jsr [keyprint]
+    lda $4C; sta <$20>
+    lda [KEY_3]
+    jsr [keyprint]
 
-lda $6C; sta <$20>
-lda [KEY_4]
-jsr [keyprint]
+    lda $6C; sta <$20>
+    lda [KEY_4]
+    jsr [keyprint]
 
-lda $8C; sta <$20>
-lda [KEY_5]
-jsr [keyprint]
+    lda $8C; sta <$20>
+    lda [KEY_5]
+    jsr [keyprint]
 
-
-inc <$10>; lda <$10>; 
-sta [$70F0]
-sta [$70F1]
-sta [$70F2]
-
+    # set the channel volume to the counter value
+    inc <zVolumeCounter>; lda <zVolumeCounter>; 
+    sta [$70F0]
+    sta [$70F1]
+    sta [$70F2]
 cli
 rti
 
+#----------------------------
+# Subroutines and data
 
 _keyprint
     ldy 8
@@ -181,11 +184,12 @@ _keyprint
     dey; bne (loop)
 rts
 
-_text01
+# zero-terminated strings
+_textWelcome
 .byte " Hello! Welcome to my Computer! "
-_text02
+_textSpecs
 .byte "Running @3Mhz with custom video + sound! "
-_textload
+_textLoad
 .byte "Drag & Drop a ROM to run!"
 
 .asm frequencies
@@ -197,7 +201,3 @@ _textload
 .word reset
 .word reset
 .word irq
-
-
-# The Other banks
-.pad $8000 * 15

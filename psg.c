@@ -22,7 +22,7 @@ uint8_t psg_tick_wave(uint8_t wave) {
 
 // psg noise ticking is handled externally
 uint8_t psg_tick_noise(PSG *psg) {
-    psg->wave[4] = psg_tick_wave(psg->wave[4]);
+    psg->wave[3] = psg_tick_wave(psg->wave[3]);
 }
 
 void psg_tick_82c54(PSG *psg) {
@@ -135,12 +135,18 @@ uint8_t psg_access(PSG *psg, ACCESS *result) {
     return operand;
 }
 
-uint8_t psg_getsample(PSG *psg) {
-    uint8_t value = psg->volume[psg->cycle];
-    if (! (psg->wave[psg->cycle] & 0x01)) {
-        value = 0;
+float psg_getsample(PSG *psg, int left) {
+    float value = 0;
+    for (int i = 0; i < 4; i++) {
+        if (! (psg->wave[i] & 0x01)) {
+            if (left) {
+                value += (float)(psg->volume[i]>>4);
+            } else {
+                value += (float)(psg->volume[i]&0x0F);
+            }
+        }
     }
-    psg->cycle = (psg->cycle + 1)%4;
+    //psg->cycle = (psg->cycle + 1)%4;
     
     //printf("%i",value);
     return value;

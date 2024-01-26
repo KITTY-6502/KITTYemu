@@ -3,7 +3,8 @@
 #include <SDL2/SDL_image.h>
 #include <termios.h>
 #include <unistd.h>
-
+#include <time.h>
+#include <stdlib.h>
 
 #include "w6502.c"
 #include "psg.c"
@@ -21,7 +22,7 @@ static int sample_rate = 44100;
 const int screen_width = 256; const int screen_height = 256;
 const uint8_t* os_keyboard;
 
-const uint32_t tick_interval = 1000/50;
+const uint32_t tick_interval = 1000/50.1;
 uint32_t next_time = 0;
 
 uint8_t system_ram[0x7000];
@@ -30,30 +31,32 @@ int     system_rom_size;
 uint8_t bank_reg;
 PSG     system_psg;
 
-uint8_t system_psg_samples[2000000];
-uint16_t system_psg_samples_count = 0;
+const int system_psg_buff_size = 2000000;
+float system_psg_samples[2000000];
+int system_psg_sample_index = 0;
 
 int cur_cycle = 7;
 
 int font[256][8][8];
 
+
 uint32_t palette[16] = {
     0x000000,
-    0x4C0000,
-    0x684C00,
-    0xFF4C00,
-    0x006800,
-    0x4C6800,
-    0x69FF00,
+    0x990000,
+    0xBB6800,
+    0xFF6800,
+    0x00BB00,
+    0x99BB00,
+    0xBBFF00,
     0xFFFF00,
     
     0x0000FF,
-    0x4C00FF,
-    0x684CFF,
-    0xFF4CFF,
-    0x0068FF,
-    0x4C68FF,
-    0x68FFFF,
+    0x9900FF,
+    0xBB68FF,
+    0xFF68FF,
+    0x00BBFF,
+    0x99BBFF,
+    0xBBFFFF,
     0xFFFFFF
 };
 
@@ -307,6 +310,12 @@ int render_screen(SDL_Texture* texture) {
     SDL_UnlockTexture(texture);
 
 }
+int initram()
+{
+    for (int i = 0; i < 0x7000; i++) {
+        system_ram[i] = rand();
+    }
+}
 
 int loadrom(char* filename, CPU* cpu) 
 {
@@ -328,8 +337,6 @@ int loadrom(char* filename, CPU* cpu)
     cpu->C = 0; cpu->IRQ = 0; cpu->NMI = 0; cpu->RESET = 1;
     cpu->P  = 0x24;
     cpu->S  = 0xFD;
-    
-    printf("ROM SIZE %i",system_rom_size);
 }
 
 int quit = 0;
@@ -348,6 +355,12 @@ static void audio_callback(void *unused, Uint8 *byte_stream, int byte_stream_len
     int i;
     int16_t *s_byte_stream;
     int remain;
+    static int prev_index = 0;
+    static int wait = 2;
+    
+    if (wait) {
+        wait--; return;
+    }
 
     /* zero the buffer */
     memset(byte_stream, 0, byte_stream_length);
@@ -361,31 +374,36 @@ static void audio_callback(void *unused, Uint8 *byte_stream, int byte_stream_len
 
     /* buffer is interleaved, so get the length of 1 channel */
     remain = byte_stream_length / 2;
-
+    
     /* write random samples to buffer to generate noise */
     int u = 0;
+    //float ratio = ((float)3000000 / (float)sample_rate/2);
+    float ratio = 1.0f;
 
-    float ratio = (float)1500000 / (float)sample_rate;
     for (i = 0; i < remain; i += 2) {
-        double average_l = 0;
-        double average_r = 0;
-        for (int x = 0; x < ratio; x+=1) {
-            average_l += (system_psg_samples[u]&0xF0) >> 4;
-            average_r += (system_psg_samples[u]&0x0F);
-            u++;
-        }
+        float average_l = 0;
+        float average_r = 0;
+
+        average_l += system_psg_samples[(prev_index + u) % system_psg_buff_size];
+        average_r += system_psg_samples[(prev_index + u+1) % system_psg_buff_size];
+        u+=2;
+
         average_l = average_l*100 / ratio; 
         average_r = average_r*100 / ratio;
         
-        s_byte_stream[i] = average_l;
-        s_byte_stream[i+1] = average_r;
+        s_byte_stream[i] = (uint16_t)average_l;
+        s_byte_stream[i+1] = (uint16_t)average_r;
     }
     
-    system_psg_samples_count = 0;
+    prev_index = (remain+prev_index)%system_psg_buff_size;
+    if (system_psg_sample_index-prev_index > remain) {
+        prev_index = system_psg_sample_index - remain;
+    }
 }
 
-int main(void)
+int main(int argc, char *argv[])
 {   
+    srand(time(NULL));
     SDL_Init(SDL_INIT_VIDEO);
     
     SDL_Window* window = SDL_CreateWindow(
@@ -412,7 +430,7 @@ int main(void)
     SDL_EventState(SDL_DROPFILE, SDL_ENABLE);
     
     uint32_t* pixels = (uint32_t*)font_texture_rgb->pixels;
-    printf("\n%X  ", font_texture_rgb->pitch);
+    //printf("\n%X  ", font_texture_rgb->pitch);
     
     for (int character = 0; character < 256; character++) {
         for (int x = 0; x < 8; x++) {
@@ -422,19 +440,20 @@ int main(void)
                 ] == 0xFFFFFFFF;
             }
         }
-        
     }
     
     SDL_FreeSurface(font_texture);
     SDL_FreeSurface(font_texture_rgb);
     
-    //setup_sdl_audio();
+    setup_sdl_audio();
     
     w6502_setup();
     CPU cpu;
     cpu.C = 0; cpu.IRQ = 0; cpu.NMI = 0; cpu.RESET = 1;
     cpu.P  = 0x24;
     cpu.S  = 0xFD;
+    initram();
+    
     loadrom("roms/test.65x",&cpu);
     
     ACCESS result;
@@ -442,6 +461,9 @@ int main(void)
     int wait = 0;
     int int_count = 0;
     int cycle_count = -1;
+    
+    double sbuff_wait = 0;
+    double sbuff_reload = 67;
     
     SDL_Event event;
     while (!quit) {
@@ -463,8 +485,10 @@ int main(void)
                switch (event.type) {
                 case SDL_QUIT:
                     quit = 1; break;
+                // Drag and Drop
                 case SDL_DROPFILE:
                     char* filename = event.drop.file;
+                    initram();
                     loadrom(filename, &cpu);
                     SDL_free(filename);
                     break;
@@ -479,8 +503,21 @@ int main(void)
         if (cycle_count > 8) cpu.IRQ = 0;
         //printf("\n\nø2 - %d\n", cur_cycle++);
         psg_tick_82c54(&system_psg);
-        //system_psg_samples[system_psg_samples_count++] = psg_getsample(&system_psg);
-
+        if (cycle_count%(39*192) == 0 ) {
+            psg_tick_noise(&system_psg);
+        }
+        
+        if (sbuff_wait<= 0) {
+            //left
+            system_psg_sample_index = (system_psg_sample_index+1) % system_psg_buff_size;
+            system_psg_samples[system_psg_sample_index] = psg_getsample(&system_psg,1);
+            // right
+            system_psg_sample_index = (system_psg_sample_index+1) % system_psg_buff_size;
+            system_psg_samples[system_psg_sample_index] = psg_getsample(&system_psg,0);
+            
+            sbuff_wait += sbuff_reload;
+        }
+        sbuff_wait -= 1.0;
         
         cpu_tick1(&cpu, &result);
         
@@ -498,7 +535,6 @@ int main(void)
             else {
             printf("Read %X(%c) from %4X \n", operand, operand, result.address);
             }
-
         }
         
         cycle_count += 1;
