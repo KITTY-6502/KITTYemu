@@ -1,16 +1,18 @@
 .cpu 65c02
 .org [$8000]
 
-.var ch_note $10
-.var ch_octave $14
-.var ch_volume $18
-.var ch_wave $1C
+# 8-bit values
+.val ch_note $10 #11,12,13
+.val ch_octave $14 #15,16,17
+.val ch_volume $18 #19,1A,1B
+.val ch_wave $1C
 # 16-bit values
-.var ch_wait_tick $20
-.var ch_wait_note $24
-.var ch_index $28
-.var ch_inst  $2A
-.var song_tempo $30
+.val ch_wait_tick $20
+.val ch_wait_note $24
+.val ch_index $28 #$29, #2A, #2B, 
+.val ch_inst  $30
+.val song_tempo $34
+.val active_channels $60
 
 _nmi
     rti
@@ -57,22 +59,55 @@ _reset
         stz <$00+X>
     inc X; bne (fillzero)
     
-    lda 1; sta <ch_wait_tick+0>; sta <ch_wait_tick+1>; sta <ch_wait_tick+2>; sta <ch_wait_tick+3>
+    lda 1
+    sta <ch_wait_tick+0>; sta <ch_wait_tick+1>; sta <ch_wait_tick+2>; sta <ch_wait_tick+3>
+    sta <ch_wait_note+0>; sta <ch_wait_note+1>; sta <ch_wait_note+2>; sta <ch_wait_note+3>
     
     lda Track01.lo; sta <ch_index+0>; lda Track01.hi; sta <ch_index+1>
     lda Track02.lo; sta <ch_index+2>; lda Track02.hi; sta <ch_index+3>
     lda Track03.lo; sta <ch_index+4>; lda Track03.hi; sta <ch_index+5>
     lda Track04.lo; sta <ch_index+6>; lda Track04.hi; sta <ch_index+7>
     
-    lda 2; sta <song_tempo>
+    lda 3; sta <song_tempo>
+    
+    lda $00; sta <active_channels>
     
     sei
 _Main
-    ldx $00; jsr [ProcessCh]
-    ldx $01; jsr [ProcessCh]
-    ldx $02; jsr [ProcessCh]
-    ldx $03; jsr [ProcessCh]
+    __channelmute
+        lda [$7040]; beq (break)
+        cmp %1000_0000; beq (only1)
+        cmp %0100_0000; beq (only2)
+        cmp %0010_0000; beq (only3)
+        cmp %0001_0000; beq (only4)
+        cmp %0000_1000; beq (all4)
+        
+        bra (break)
+        ___only1
+            lda %0000_0001; sta <active_channels>; bra (break)
+        ___only2
+            lda %0000_0010; sta <active_channels>; bra (break)
+        ___only3
+            lda %0000_0100; sta <active_channels>; bra (break)
+        ___only4
+            lda %0000_1000; sta <active_channels>; bra (break)
+        ___all4
+            lda %0000_1111; sta <active_channels>; bra (break)
+    ___break
     
+    lda <active_channels>
+    lsr A; bcc (no1)
+        psh A; ldx $00; jsr [ProcessCh]; pul A
+    __no1
+    lsr A; bcc (no2)
+        psh A; ldx $01; jsr [ProcessCh]; pul A
+    __no2
+    lsr A; bcc (no3)
+        psh A; ldx $02; jsr [ProcessCh]; pul A
+    __no3
+    lsr A; bcc (no4)
+        psh A; ldx $03; jsr [ProcessCh]; pul A
+    __no4
     # Display the registers
     ldx $00; jsr [ShowRegs]
     ldx $01; jsr [ShowRegs]
@@ -159,7 +194,7 @@ _ProcessCh
     __end
         psh X
         txa; asl A; tax
-        lda [TrackStart+X]; sta <ch_index+X>; lda [TrackStart+1]; sta <ch_index+1+X>
+        lda [TrackStart+X]; sta <ch_index+X>; lda [TrackStart+1+X]; sta <ch_index+1+X>
         pul X
         jmp [run]
     __tickset
@@ -191,7 +226,15 @@ _ProcessCh
         and $0F; sta <ch_volume+X>
         asl A; asl A; asl A; asl A
         ora <ch_volume+X>
-        sta [$70F0+X]
+        
+        #sta [$70F0+X]
+        # hack to deal with wrongly mapped registers on v1a board
+        psh A
+        lda [volumeREG+X]; sta <$00>
+        lda $70; sta <$01>
+        pul A
+        sta [<$00>]
+        
         jmp [run]
     __note
         psh A; psh A
@@ -224,6 +267,9 @@ __noinc
 pul X
 rts
 
+_volumeREG
+.byte $F3, $F2, $F1, $F0
+
 _delays
 .byte 0, 1
 .byte 2, 3
@@ -234,27 +280,58 @@ _delays
 .byte 64, 96
 .byte 128, 192
 
-.var nR   %0000_0000
-.var nC   %0001_0000
-.var nCC  %0010_0000
-.var nD   %0011_0000
-.var nDD  %0100_0000
-.var nE   %0101_0000
-.var nF   %0110_0000
-.var nFF  %0111_0000
-.var nG   %1000_0000
-.var nGG  %1001_0000
-.var nA   %1010_0000
-.var nAA  %1011_0000
-.var nB   %1100_0000
-.var xO   %1101_0000
-.var xV   %1110_0000
-.var xW   %1111_0000
-.var xT   %1111_0001
-.var xI   %1111_0010
-.var xEND %1111_1111
+.val nR   %0000_0000
+.val nC   %0001_0000
+.val nCC  %0010_0000
+.val nD   %0011_0000
+.val nDD  %0100_0000
+.val nE   %0101_0000
+.val nF   %0110_0000
+.val nFF  %0111_0000
+.val nG   %1000_0000
+.val nGG  %1001_0000
+.val nA   %1010_0000
+.val nAA  %1011_0000
+.val nB   %1100_0000
+.val xO   %1101_0000    # Octave
+.val xV   %1110_0000    # Volume
+.val xW   %1111_0000    # Wave
+.val xT   %1111_0001
+.val xI   %1111_0010
+.val xEND %1111_1111
 
 _Track01
+
+.byte xW, $80, xO+4, xV+$F
+
+.byte nA+4, nB+4,xO+9, nC+6,
+.byte nE+6, nD+4, nC+4, nD+6
+.byte xO+8, nG+6, nF+4, nE+4,nF+4,nG+4
+
+.byte nA+4, nB+4,xO+9, nC+6, nE+6
+.byte nC+6, nD+6, xO+8, nB+6, nA+6, nG+6
+
+.byte nA+4, nB+4,xO+9, nC+6,
+.byte nE+6, nD+4, nC+4, nD+6
+.byte xO+8, nG+6, nF+4, nE+4,nF+4,nG+4
+
+.byte nA+4, nB+4,xO+9, nC+6, nE+6
+.byte nA+6, nG+6,nF+6, nE+6
+.byte xO+8, nF+6
+
+.byte xW, %1101_0000, xO+8
+
+.byte nA+4,nB+4,xO+9,nC+9
+.byte nE+6,nD+8,xO+8,nB+6
+
+.byte xO+9, nC+6, xO+8, nA+11
+
+.byte nA+4,nB+4,xO+9,nC+9
+.byte nE+6,nD+8,xO+8,nB+6
+
+.byte xO+9, nC+12
+
+.byte xEND
 
 .byte xW, $F0, xO+5
 .byte xV+0, nCC+2, xV+1, nR+2, xV+2, nR+2, xV+3, nR+2, xV+4, nR+2, xV+5, nR+2, xV+6, nR+2, xV+7, nR+2
@@ -262,28 +339,51 @@ _Track01
 .byte xW, %1011_0000, xO+5
 .byte xV+0, nCC+2, xV+1, nR+2, xV+2, nR+2, xV+3, nR+2, xV+4, nR+2, xV+5, nR+2, xV+6, nR+2, xV+7, nR+2
 .byte xV+8, nR+2, xV+9, nR+2, xV+10, nR+2, xV+11, nR+2, xV+12, nR+2, xV+13, nR+2, xV+14, nR+2, xV+15, nR+2
-.byte xEND
 
-#.byte xW, $F0, xO+5
-#.byte xV+15, nCC+1 xV+14, nR+1, xV+13, nR+1, xV+12, nR+1
-#.byte xV+15, nDD+1 xV+14, nR+1, xV+13, nR+1, xV+12, nR+1
-#.byte xV+15, nFF+1 xV+14, nR+1, xV+13, nR+1, xV+12, nR+1, nR+4, nR+10
-#.byte xV+15, nF+1 xV+14, nR+1, xV+13, nR+1, xV+12, nR+1
-#.byte xV+15, nDD+1 xV+14, nR+1, xV+13, nR+1, xV+12, nR+1
-#.byte xV+15, nCC+1 xV+14, nR+1, xV+13, nR+1, xV+12, nR+1
-#.byte xV+15, xO+8, nGG+6, nAA+4
+.byte xW, $F0, xO+5
+.byte xV+15, nCC+1 xV+14, nR+1, xV+13, nR+1, xV+12, nR+1
+.byte xV+15, nDD+1 xV+14, nR+1, xV+13, nR+1, xV+12, nR+1
+.byte xV+15, nFF+1 xV+14, nR+1, xV+13, nR+1, xV+12, nR+1, nR+4, nR+10
+.byte xV+15, nF+1 xV+14, nR+1, xV+13, nR+1, xV+12, nR+1
+.byte xV+15, nDD+1 xV+14, nR+1, xV+13, nR+1, xV+12, nR+1
+.byte xV+15, nCC+1 xV+14, nR+1, xV+13, nR+1, xV+12, nR+1
+.byte xV+15, xO+8, nGG+6, nAA+4
 
-#.byte xV+12, nR+10, nR+6, nFF+4, nGG+4, nAA+4, xO+9, nCC+6, xO+8, nGG+4
-
+.byte xV+12, nR+10, nR+6, nFF+4, nGG+4, nAA+4, xO+9, nCC+6, xO+8, nGG+4
 
 _Track02
-.byte nR+15,xEND
+
+.byte xW, %1100_0000, xV+$F
+
+.byte xO+3, nA+6, xO+9, nE+6, nC+6, nE+6, xO+8, nG+6, xO+9, nD+6, xO+8, nB+6, xO+9, nD+6
+.byte xO+3, nA+6, xO+9, nE+6, nC+6, nE+6, xO+8, nG+6, xO+9, nD+6, xO+8, nB+6, xO+9, nD+6
+.byte xO+3, nA+6, xO+9, nE+6, nC+6, nE+6, xO+8, nG+6, xO+9, nD+6, xO+8, nB+6, xO+9, nD+6
+.byte xO+3, nA+6, xO+9, nE+6, nC+6, nE+6, xO+8, nF+6, xO+9, nD+6, xO+8, nA+6, xO+9, nD+6
+
+.byte xO+3, nA+6, xO+9, nE+6, nC+6, nE+6, xO+8, nG+6, xO+9, nD+6, xO+8, nB+6, xO+9, nD+6
+.byte xO+3, nA+6, xO+9, nE+6, nC+6, nE+6, xO+8, nF+6, xO+9, nD+6, xO+8, nA+6, xO+9, nD+6
+.byte xO+3, nA+6, xO+9, nE+6, nC+6, nE+6, xO+8, nG+6, xO+9, nD+6, xO+8, nB+6, xO+9, nD+6
+.byte xO+3, nA+6, xO+9, nE+6, nC+6, nE+6, xO+8, nF+6, xO+9, nD+6, xO+8, nA+6, xO+9, nD+6
+
+.byte xEND
 
 _Track03
-.byte nR+15,xEND
+
+.byte xW, %1110_0000, xV+$8
+.byte xO+2, nA+10, nG+10
+.byte xO+2, nA+10, nG+10
+.byte xO+2, nA+10, nG+10
+.byte xO+2, nA+10, nF+10
+
+.byte xO+2, nA+10, nG+10
+.byte xO+2, nA+10, nF+10
+.byte xO+2, nA+10, nG+10
+.byte xO+2, nA+10, nF+10
+
+.byte xEND
 
 _Track04
-.byte nR+15,xEND
+.byte xV+0, xW, $00, nR+15,xEND
 
 _TrackStart
 .word Track01

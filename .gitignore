@@ -1,5 +1,6 @@
 # KittyEMU stuff
 ignore/
+build/
 
 # Prerequisites
 *.d

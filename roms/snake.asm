@@ -13,46 +13,46 @@ _RESET
     stz [$70F0]; stz [$70F1]; stz [$70F2]; stz [$70F3]
     
     # Game Variables
-    .var snake_index $10
-    .var snake_size  $11
+    .val snake_index $10
+    .val snake_size  $11
     stz <snake_index>; lda 5; sta <snake_size>
-    .var score       $12
+    .val score       $12
     stz <score>
 
-    .var snake_timer $13
-    .var snake_delay  $14
-    .var snake_delayc $15
-    .var snake_delayh $16
+    .val snake_timer $13
+    .val snake_delay  $14
+    .val snake_delayc $15
+    .val snake_delayh $16
     lda 7; sta <snake_delay>
     lda $40; sta <snake_delayc>
     lda $01; sta <snake_delayh>
 
-    .var symb_app    $FC
+    .val symb_app    $FC
 
     lda snake_delay; sta <snake_timer>
 
-    .var snake_curdir $16
-    .var snake_newdir $17
+    .val snake_curdir $16
+    .val snake_newdir $17
     
 
     # Arrays of snake coords
-    .var snake_x     $200
-    .var snake_y     $300
+    .val snake_x     $200
+    .val snake_y     $300
 
-    .var level        $1C
+    .val level        $1C
     stz <level>
     jsr [LoadLevel]    
 
-    .var random       $18
+    .val random       $18
     lda $F0; sta <random>
 
-    .var gameover     $1A
+    .val gameover     $1A
     stz <gameover>
-    .var apple_count  $1B
+    .val apple_count  $1B
 
-    .var fxvolume     $1D
+    .val fxvolume     $1D
     stz <fxvolume>
-    .var fxnote       $1E
+    .val fxnote       $1E
     stz <fxnote>
 
     ldx <snake_size>
@@ -67,7 +67,7 @@ _RESET
         sta [<$00>]
     txa; bne (draw)
     
-    .var lastsegtimer $1F
+    .val lastsegtimer $1F
     lda $FF; sta <lastsegtimer>
     
     cli

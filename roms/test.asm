@@ -2,23 +2,23 @@
 # But you can use any assembler you want for your own programs
 .cpu 65c02
 
-.var CHR $6C00
-.var PAL $6800
+.val CHR $6C00
+.val PAL $6800
 
-.var KEY_1    $7000
-.var KEY_2    $7010
-.var KEY_3    $7020
-.var KEY_4    $7030
-.var KEY_5    $7040
+.val KEY_1    $7000
+.val KEY_2    $7010
+.val KEY_3    $7020
+.val KEY_4    $7030
+.val KEY_5    $7040
 
-.var OSC_0    $70E0
-.var OSC_1    $70E1
-.var OSC_2    $70E2
-.var OSC_CTRL $70E3
+.val OSC_0    $70E0
+.val OSC_1    $70E1
+.val OSC_2    $70E2
+.val OSC_CTRL $70E3
 
-.var zColorCur       $00
-.var zColorTimer     $01
-.var zVolumeCounter  $10
+.val zColorCur       $00
+.val zColorTimer     $01
+.val zVolumeCounter  $10
 
 .org [$8000]
 _reset
