@@ -163,9 +163,9 @@ __end
 
     # set the channel volume to the counter value
     inc <zVolumeCounter>; lda <zVolumeCounter>; 
-    sta [$70F0]
-    sta [$70F1]
-    sta [$70F2]
+    #sta [$70F0]
+    #sta [$70F1]
+    #sta [$70F2]
 cli
 rti
 

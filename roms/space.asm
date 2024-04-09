@@ -15,16 +15,16 @@ __backgroundclear
     sta [$6C00+X]; sta [$6D00+X]; sta [$6E00+X]; sta [$6F00+X]
 inc X; bne (backgroundclear)
 
-.var shipX $10
-.var shipY $11
-.var shipMoveTimer $12
-.var shipMoveDelay $02
+.val shipX $10
+.val shipY $11
+.val shipMoveTimer $12
+.val shipMoveDelay $02
 lda 8; sta <shipX>; lda 20; sta <shipY>
-.var shipShootTimer $13
-.var shipShootDelay $02
+.val shipShootTimer $13
+.val shipShootDelay $02
 
-.var bulletsX $20
-.var bulletsY $30
+.val bulletsX $20
+.val bulletsY $30
 
 _bullets
 ldx $0F

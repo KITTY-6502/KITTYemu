@@ -1138,10 +1138,6 @@ uint8_t mode_rti_p2(CPU *cpu, uint8_t operand) {
 
 // ABS Indirect
 uint8_t mode_abs_ind_p1(CPU *cpu,ACCESS *result) {
-    uint8_t extra = 0;
-    if (cpu->MODE == IAX) {
-        extra = cpu->X;
-    }
     switch (cpu->C) {
         case 1:
         case 2:
@@ -1151,11 +1147,11 @@ uint8_t mode_abs_ind_p1(CPU *cpu,ACCESS *result) {
             break;
         case 3:
             result->type = READ;
-            result->address = cpu->TARGET + extra;
+            result->address = cpu->TARGET;
             break;
         case 4:
             result->type = READ;
-            result->address = cpu->TARGET+1 + extra;
+            result->address = cpu->TARGET+1;
             break;
         case 5:
             cpu->TARGET = cpu->DL;
@@ -1163,10 +1159,14 @@ uint8_t mode_abs_ind_p1(CPU *cpu,ACCESS *result) {
     }
 }
 uint8_t mode_abs_ind_p2(CPU *cpu, uint8_t operand) {
-    
+    uint8_t extra = 0;
+    uint8_t carry = 0;
+    if (cpu->MODE == IAX) {
+        extra = cpu->X;
+    }
     switch (cpu->C) {
         case 1:
-            cpu->TARGET = 0 + operand; break;
+            cpu->TARGET = 0 + operand + extra; break;
         case 2:
             cpu->TARGET = cpu->TARGET + (operand << 8); break;
         case 3:
