@@ -227,13 +227,13 @@ _ProcessCh
         asl A; asl A; asl A; asl A
         ora <ch_volume+X>
         
-        #sta [$70F0+X]
+        sta [$70F0+X]
         # hack to deal with wrongly mapped registers on v1a board
-        psh A
-        lda [volumeREG+X]; sta <$00>
-        lda $70; sta <$01>
-        pul A
-        sta [<$00>]
+        #psh A
+        #lda [volumeREG+X]; sta <$00>
+        #lda $70; sta <$01>
+        #pul A
+        #sta [<$00>]
         
         jmp [run]
     __note

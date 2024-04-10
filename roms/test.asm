@@ -16,9 +16,13 @@
 .val OSC_2    $70E2
 .val OSC_CTRL $70E3
 
-.val zColorCur       $00
-.val zColorTimer     $01
-.val zVolumeCounter  $10
+.org [$0000]
+.var zADDRText 2
+.var zADDRScreen 2
+.var zColorCur
+.var zColorTimer
+.var zVolumeCounter
+.var zPosition
 
 .org [$8000]
 _reset
@@ -83,31 +87,39 @@ _test2
 ldx 0
 __loop
     lda [textLoad+X]; beq (end)
-    sta [CHR+320+2+X]
+    sta [CHR+$C0+2+X]
+    lda $0F
+    sta [PAL+$A0+2+X]
+    sta [PAL+$C0+2+X]
+    sta [PAL+$E0+2+X]
     inc X
     bra (loop)
 __end
+lda $CF; sta [CHR+$A0+2]
+lda $CE; sta [CHR+$A0+29]
+lda $CD; sta [CHR+$E0+2]
+lda $CC; sta [CHR+$E0+29]
 
 # 89AB CDEF
 
 # Print Palette to Screen
-lda $00; sta [$6AA8]
-lda $11; sta [$6AA9]
-lda $22; sta [$6AAA]
-lda $33; sta [$6AAB]
-lda $44; sta [$6AAC]
-lda $55; sta [$6AAD]
-lda $66; sta [$6AAE]
-lda $77; sta [$6AAF]
+lda $00; sta [$6A88]
+lda $11; sta [$6A89]
+lda $22; sta [$6A8A]
+lda $33; sta [$6A8B]
+lda $44; sta [$6A8C]
+lda $55; sta [$6A8D]
+lda $66; sta [$6A8E]
+lda $77; sta [$6A8F]
 
-lda $88; sta [$6AB0]
-lda $99; sta [$6AB1]
-lda $AA; sta [$6AB2]
-lda $BB; sta [$6AB3]
-lda $CC; sta [$6AB4]
-lda $DD; sta [$6AB5]
-lda $EE; sta [$6AB6]
-lda $FF; sta [$6AB7]
+lda $88; sta [$6A90]
+lda $99; sta [$6A91]
+lda $AA; sta [$6A92]
+lda $BB; sta [$6A93]
+lda $CC; sta [$6A94]
+lda $DD; sta [$6A95]
+lda $EE; sta [$6A96]
+lda $FF; sta [$6A97]
 
 ldx $00
 __display_font
@@ -129,38 +141,59 @@ dec <zColorTimer>; bne (next)
     lda 50; sta <zColorTimer>
 __next
 
-ldx 0
-__loop
-    lda [textWelcome+X]; beq (end)
-    sta [$6C00+X]
-    lda <zColorCur>; sta [$6800+X]
-    inc X
+__hellotext
+    ldx 0
+    ___loop
+        lda [textWelcome+X]; beq (end)
+        sta [$6C00+X]
+        lda <zColorCur>; sta [$6800+X]
+        inc X
     bra (loop)
-__end
-
+    ___end
+    
+__keytext
+    lda textKeyboard.hi; sta <zADDRText+1>
+    lda textKeyboard.lo; sta <zADDRText+0>
+    lda $6D; sta <zADDRScreen+1>
+    lda $40+8; sta <zADDRScreen+0>
+    jsr [textprint]
+    
     # Printing Keyboard to the screen
-    lda <$6E>; sta <$21>
-
-    lda $0C; sta <$20>
+    lda $0C; sta <zPosition>
     lda [KEY_1]
     jsr [keyprint]
 
-    lda $2C; sta <$20>
+    lda $2C; sta <zPosition>
     lda [KEY_2]
     jsr [keyprint]
 
-    lda $4C; sta <$20>
+    lda $4C; sta <zPosition>
     lda [KEY_3]
     jsr [keyprint]
 
-    lda $6C; sta <$20>
+    lda $6C; sta <zPosition>
     lda [KEY_4]
     jsr [keyprint]
 
-    lda $8C; sta <$20>
+    lda $8C; sta <zPosition>
     lda [KEY_5]
     jsr [keyprint]
-
+    
+__colortext
+    lda textPalette.hi; sta <zADDRText+1>
+    lda textPalette.lo; sta <zADDRText+0>
+    lda $6E; sta <zADDRScreen+1>
+    lda $40+13; sta <zADDRScreen+0>
+    jsr [textprint]
+    
+__fonttext
+    lda textFont.hi; sta <zADDRText+1>
+    lda textFont.lo; sta <zADDRText+0>
+    lda $6E; sta <zADDRScreen+1>
+    lda $C0+14; sta <zADDRScreen+0>
+    jsr [textprint]
+    
+    
     # set the channel volume to the counter value
     inc <zVolumeCounter>; lda <zVolumeCounter>; 
     #sta [$70F0]
@@ -179,21 +212,36 @@ _keyprint
         asl A; bcc (nopress); ldx $FC
         __nopress
         psh A
-        txa; ldx <$20>; sta [$6E00+X]; inc <$20>
+        txa; ldx <zPosition>; sta [CHR+$180+X]; inc <zPosition>
         pul A
     dey; bne (loop)
+rts
+
+_textprint
+    ldy 0
+    __loop
+        lda [<zADDRText>+Y]; beq (break)
+        sta [<zADDRScreen>+Y]
+        inc Y
+    bra (loop)
+__break
 rts
 
 # zero-terminated strings
 _textWelcome
 .byte " Hello! Welcome to my Computer! "
 _textSpecs
-.byte "Running @3Mhz with custom video + sound! "
+.byte "65c02 with custom video + sound! "
 _textLoad
-.byte "Drag & Drop a ROM to run!"
+.byte " Drag & Drop a ROM to run!  "
+_textPalette
+.byte "Palette"
+_textKeyboard
+.byte "Keyboard Matrix"
+_textFont
+.byte "Font"
 
 .asm frequencies
-
 #
 #   END OF CODE
 #

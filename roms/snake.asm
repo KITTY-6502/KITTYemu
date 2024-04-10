@@ -70,6 +70,12 @@ _RESET
     .val lastsegtimer $1F
     lda $FF; sta <lastsegtimer>
     
+    #ldx 30
+    #lda %00_11_011_0; sta [$70E3]
+    #lda [NoteTableLo+X]; sta [$70E0]
+    #lda [NoteTableHi+X]; sta [$70E0]
+    lda %0000_1111; sta [$70F4]
+    
     cli
 
 # End of RESET
@@ -191,17 +197,17 @@ _fin
         ldx <fxnote>; bpl (next0); ldx 12; stx <fxnote>
         ___next0        
         cmp $FF; bne (next1)
-            #lda %00_11_011_0; sta [$70E3]
-            #lda [NoteTableLo+X]; sta [$70E0]
-            #lda [NoteTableHi+X]; asl A; sta [$70E0]
+            lda %00_11_011_0; sta [$70E3]
+            lda [note_lo+48+X]; sta [$70E0]
+            lda [note_hi+48+X]; asl A; sta [$70E0]
             bra (next2)
         ___next1
         cmp $CC; bne (next2)
-            #lda %00_11_011_0; sta [$70E3]
-            #lda [NoteTableLo+X]; sta [$70E0]
-            #lda [NoteTableHi+X]; sta [$70E0]
+            lda %00_11_011_0; sta [$70E3]
+            lda [note_lo+48+X]; sta [$70E0]
+            lda [note_hi+48+X]; sta [$70E0]
         ___next2
-            lda <fxvolume>; sta [$70F3]
+            lda <fxvolume>; sta [$70F0]
             sec; sbc $11; sta <fxvolume>; bne (nosound)
             sta [$70F0]
     __nosound
@@ -379,10 +385,7 @@ _Level2
     cli
 rts
 
-_NoteTableLo
-.byte $65,$BA,$23,$A2,$37,$E5,$AC,$8E,$8D,$AA,$E7,$47,$CB
-_NoteTableHi
-.byte $16,$17,$19,$1A,$1C,$1D,$1F,$21,$23,$25,$27,$2A,$2C
+.asm frequencies
 
 .pad [VECTORS]
 .word NMI
