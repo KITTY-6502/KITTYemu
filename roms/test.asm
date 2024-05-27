@@ -95,10 +95,15 @@ __loop
     inc X
     bra (loop)
 __end
-lda $CF; sta [CHR+$A0+2]
-lda $CE; sta [CHR+$A0+29]
-lda $CD; sta [CHR+$E0+2]
-lda $CC; sta [CHR+$E0+29]
+lda $AA; sta [CHR+$A0+2]
+lda $AB; sta [CHR+$A0+29]
+lda $BA; sta [CHR+$E0+2]
+lda $BB; sta [CHR+$E0+29]
+
+lda $F0; sta [PAL+$A0+2]
+lda $F0; sta [PAL+$A0+29]
+lda $F0; sta [PAL+$E0+2]
+lda $F0; sta [PAL+$E0+29]
 
 # 89AB CDEF
 
@@ -249,3 +254,5 @@ _textFont
 .word reset
 .word reset
 .word irq
+
+.pad $8000*15

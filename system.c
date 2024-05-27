@@ -190,72 +190,72 @@ uint8_t system_access(CPU *cpu,ACCESS *result) {
             }
             
             switch (row) {
-                case 0:
-                    if (os_keyboard[SDL_SCANCODE_ESCAPE]) operand |= 0x01;
-                    if (os_keyboard[SDL_SCANCODE_W]) operand |= 0x02;
-                    if (os_keyboard[SDL_SCANCODE_E]) operand |= 0x04;
-                    if (os_keyboard[SDL_SCANCODE_R]) operand |= 0x08;
-                    if (os_keyboard[SDL_SCANCODE_T]) operand |= 0x10;
-                    if (os_keyboard[SDL_SCANCODE_U]) operand |= 0x20;
-                    if (os_keyboard[SDL_SCANCODE_I]) operand |= 0x40;
-                    if (os_keyboard[SDL_SCANCODE_O]) operand |= 0x80;
+                case 4:
+                    if (os_keyboard[SDL_SCANCODE_ESCAPE]) operand   |= 0x80;
+                    if (os_keyboard[SDL_SCANCODE_W]) operand        |= 0x40;
+                    if (os_keyboard[SDL_SCANCODE_E]) operand        |= 0x20;
+                    if (os_keyboard[SDL_SCANCODE_R]) operand        |= 0x10;
+                    if (os_keyboard[SDL_SCANCODE_T]) operand        |= 0x08;
+                    if (os_keyboard[SDL_SCANCODE_U]) operand        |= 0x04;
+                    if (os_keyboard[SDL_SCANCODE_I]) operand        |= 0x02;
+                    if (os_keyboard[SDL_SCANCODE_O]) operand        |= 0x01;
                     
                     // numbers
-                    if (os_keyboard[SDL_SCANCODE_2]) operand |= 0x02;
-                    if (os_keyboard[SDL_SCANCODE_3]) operand |= 0x04;
-                    if (os_keyboard[SDL_SCANCODE_4]) operand |= 0x08;
-                    if (os_keyboard[SDL_SCANCODE_5]) operand |= 0x10;
-                    if (os_keyboard[SDL_SCANCODE_7]) operand |= 0x20;
-                    if (os_keyboard[SDL_SCANCODE_8]) operand |= 0x40;
-                    if (os_keyboard[SDL_SCANCODE_9]) operand |= 0x80;
-                    
-                    break;
-                case 1:
-                    if (alt) operand |= 0x01;
-                    if (os_keyboard[SDL_SCANCODE_Q]) operand |= 0x02;
-                    if (os_keyboard[SDL_SCANCODE_S]) operand |= 0x04;
-                    if (os_keyboard[SDL_SCANCODE_G]) operand |= 0x08;
-                    if (os_keyboard[SDL_SCANCODE_Y]) operand |= 0x10;
-                    if (os_keyboard[SDL_SCANCODE_J]) operand |= 0x20;
-                    if (os_keyboard[SDL_SCANCODE_K]) operand |= 0x40;
-                    if (os_keyboard[SDL_SCANCODE_P]) operand |= 0x80;
-                    
-                    // numbers
-                    if (os_keyboard[SDL_SCANCODE_1]) operand |= 0x02;
-                    if (os_keyboard[SDL_SCANCODE_6]) operand |= 0x10;
-                    if (os_keyboard[SDL_SCANCODE_0]) operand |= 0x80;
-                    
-                    break;
-                case 2:
-                    if (os_keyboard[SDL_SCANCODE_LSHIFT]) operand |= 0x01;
-                    if (os_keyboard[SDL_SCANCODE_A]) operand |= 0x02;
-                    if (os_keyboard[SDL_SCANCODE_D]) operand |= 0x04;
-                    if (os_keyboard[SDL_SCANCODE_V]) operand |= 0x08;
-                    if (os_keyboard[SDL_SCANCODE_H]) operand |= 0x10;
-                    if (os_keyboard[SDL_SCANCODE_M]) operand |= 0x20;
-                    if (os_keyboard[SDL_SCANCODE_L]) operand |= 0x40;
-                    if (os_keyboard[SDL_SCANCODE_BACKSPACE]) operand |= 0x80;
+                    if (os_keyboard[SDL_SCANCODE_2]) operand        |= 0x80;
+                    if (os_keyboard[SDL_SCANCODE_3]) operand        |= 0x40;
+                    if (os_keyboard[SDL_SCANCODE_4]) operand        |= 0x20;
+                    if (os_keyboard[SDL_SCANCODE_5]) operand        |= 0x10;
+                    if (os_keyboard[SDL_SCANCODE_7]) operand        |= 0x08;
+                    if (os_keyboard[SDL_SCANCODE_8]) operand        |= 0x04;
+                    if (os_keyboard[SDL_SCANCODE_9]) operand        |= 0x02;
                     
                     break;
                 case 3:
-                    if (os_keyboard[SDL_SCANCODE_TAB]) operand |= 0x01;
-                    if (os_keyboard[SDL_SCANCODE_Z]) operand |= 0x02;
-                    if (os_keyboard[SDL_SCANCODE_F]) operand |= 0x04;
-                    if (os_keyboard[SDL_SCANCODE_B]) operand |= 0x08;
-                    if (os_keyboard[SDL_SCANCODE_N]) operand |= 0x10;
-                    if (os_keyboard[SDL_SCANCODE_COMMA]) operand |= 0x20;
-                    if (os_keyboard[SDL_SCANCODE_PERIOD]) operand |= 0x40;
-                    if (os_keyboard[SDL_SCANCODE_RETURN]) operand |= 0x80;
+                    if (alt) operand                                |= 0x80;
+                    if (os_keyboard[SDL_SCANCODE_Q]) operand        |= 0x40;
+                    if (os_keyboard[SDL_SCANCODE_S]) operand        |= 0x20;
+                    if (os_keyboard[SDL_SCANCODE_G]) operand        |= 0x10;
+                    if (os_keyboard[SDL_SCANCODE_Y]) operand        |= 0x08;
+                    if (os_keyboard[SDL_SCANCODE_J]) operand        |= 0x04;
+                    if (os_keyboard[SDL_SCANCODE_K]) operand        |= 0x02;
+                    if (os_keyboard[SDL_SCANCODE_P]) operand        |= 0x01;
+                    
+                    // numbers
+                    if (os_keyboard[SDL_SCANCODE_1]) operand        |= 0x80;
+                    if (os_keyboard[SDL_SCANCODE_6]) operand        |= 0x10;
+                    if (os_keyboard[SDL_SCANCODE_0]) operand        |= 0x02;
+                    
                     break;
-                case 4:
-                    if (os_keyboard[SDL_SCANCODE_LCTRL]) operand |= 0x01;
-                    if (os_keyboard[SDL_SCANCODE_X]) operand |= 0x02;
-                    if (os_keyboard[SDL_SCANCODE_C]) operand |= 0x04;
-                    if (os_keyboard[SDL_SCANCODE_SPACE]) operand |= 0x08;
-                    if (os_keyboard[SDL_SCANCODE_UP]) operand |= 0x10;
-                    if (os_keyboard[SDL_SCANCODE_LEFT]) operand |= 0x20;
-                    if (os_keyboard[SDL_SCANCODE_DOWN]) operand |= 0x40;
-                    if (os_keyboard[SDL_SCANCODE_RIGHT]) operand |= 0x80;
+                case 2:
+                    if (os_keyboard[SDL_SCANCODE_LSHIFT]) operand   |= 0x80;
+                    if (os_keyboard[SDL_SCANCODE_A]) operand        |= 0x40;
+                    if (os_keyboard[SDL_SCANCODE_D]) operand        |= 0x20;
+                    if (os_keyboard[SDL_SCANCODE_V]) operand        |= 0x10;
+                    if (os_keyboard[SDL_SCANCODE_H]) operand        |= 0x08;
+                    if (os_keyboard[SDL_SCANCODE_M]) operand        |= 0x04;
+                    if (os_keyboard[SDL_SCANCODE_L]) operand        |= 0x02;
+                    if (os_keyboard[SDL_SCANCODE_BACKSPACE]) operand|= 0x01;
+                    
+                    break;
+                case 1:
+                    if (os_keyboard[SDL_SCANCODE_TAB]) operand      |= 0x80;
+                    if (os_keyboard[SDL_SCANCODE_Z]) operand        |= 0x40;
+                    if (os_keyboard[SDL_SCANCODE_F]) operand        |= 0x20;
+                    if (os_keyboard[SDL_SCANCODE_B]) operand        |= 0x10;
+                    if (os_keyboard[SDL_SCANCODE_N]) operand        |= 0x08;
+                    if (os_keyboard[SDL_SCANCODE_COMMA]) operand    |= 0x04;
+                    if (os_keyboard[SDL_SCANCODE_PERIOD]) operand   |= 0x02;
+                    if (os_keyboard[SDL_SCANCODE_RETURN]) operand   |= 0x01;
+                    break;
+                case 0:
+                    if (os_keyboard[SDL_SCANCODE_LCTRL]) operand    |= 0x80;
+                    if (os_keyboard[SDL_SCANCODE_X]) operand        |= 0x40;
+                    if (os_keyboard[SDL_SCANCODE_C]) operand        |= 0x20;
+                    if (os_keyboard[SDL_SCANCODE_SPACE]) operand    |= 0x10;
+                    if (os_keyboard[SDL_SCANCODE_UP]) operand       |= 0x08;
+                    if (os_keyboard[SDL_SCANCODE_LEFT]) operand     |= 0x04;
+                    if (os_keyboard[SDL_SCANCODE_DOWN]) operand     |= 0x02;
+                    if (os_keyboard[SDL_SCANCODE_RIGHT]) operand    |= 0x01;
                     break;
                 default:
                     break;
@@ -297,10 +297,10 @@ int render_screen(SDL_Texture* texture) {
         
         int index = (x/8) + (y/8)*32;
         
-        uint8_t character = system_ram[0x6C00 + index];
+        uint8_t character = system_ram[0x6800 + index];
         uint32_t pal[2] = {
-            palette[system_ram[0x6800 + index] & 0x0F],
-            palette[system_ram[0x6800 + index] >> 4]
+            palette[system_ram[0x6C00 + index] & 0x0F],
+            palette[system_ram[0x6C00 + index] >> 4]
         };
         
         p = font[character][x%8][y%8];

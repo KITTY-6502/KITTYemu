@@ -106,8 +106,7 @@ uint8_t (*add_mode_2[LAST_OPCODE]) (CPU *cpu, uint8_t operand);
 
 int cpu_opend(CPU *cpu) {
     cpu->C = 0;
-    cpu->P |= 0x20;
-    cpu->P &= 0xEF;
+    cpu->P |= 0x20; cpu->P &= 0xEF;
 }
 
 uint8_t op_codes[256] = {
@@ -917,8 +916,54 @@ uint8_t bbr_p1(CPU *cpu,ACCESS *result) { }
 uint8_t bbr_p2(CPU *cpu, uint8_t operand) { }
 uint8_t bbs_p1(CPU *cpu,ACCESS *result) { }
 uint8_t bbs_p2(CPU *cpu, uint8_t operand) { }
-uint8_t brk_p1(CPU *cpu,ACCESS *result) { }
-uint8_t brk_p2(CPU *cpu, uint8_t operand) { }
+
+uint8_t brk_p1(CPU *cpu,ACCESS *result) {
+    cpu->C += 1;
+    cpu->P |= 0x04;
+    switch (cpu->C) {
+        case 1:
+            result->type = READ;
+            result->address= cpu->PC; break;
+        case 2:
+            result->type = WRITE;
+            result->address = 0x0100 + cpu->S;
+            result->value = cpu->PC >> 8;
+
+            cpu->S -= 1; break;
+        case 3:
+            result->type = WRITE;
+            result->address = 0x0100 + cpu->S;
+            result->value = cpu->PC & 0x00FF;
+
+            cpu->S -= 1; break;
+        case 4:
+            result->type = WRITE;
+            result->address = 0x0100 + cpu->S;
+            result->value = cpu->P | 0x10;
+
+            cpu->S -= 1; break;
+        case 5:
+            result->type = READ;
+            result->address = 0xFFF0; break;
+        case 6:
+            result->type = READ;
+            result->address = 0xFFF0; break;
+        default:
+            break;
+    }
+}
+uint8_t brk_p2(CPU *cpu, uint8_t operand) {
+    switch (cpu->C) {
+        case 5:
+            cpu->TARGET = operand; break;
+        case 6:
+            cpu->TARGET += operand << 8;
+            cpu->PC = cpu->TARGET;
+            cpu_opend(cpu); break;
+        default:
+            break;
+    }
+}
 
 uint8_t jmp_p1(CPU *cpu,ACCESS *result) { 
     result->type = READ;
@@ -1295,6 +1340,7 @@ uint8_t mode_pull_p2(CPU *cpu, uint8_t operand) {
 
 uint8_t mode_interrupt_p1(CPU *cpu,ACCESS *result) {
     cpu->C += 1;
+    cpu->P |= 0x04;
     switch (cpu->C) {
         case 1:
             result->type = READ;
@@ -1314,7 +1360,7 @@ uint8_t mode_interrupt_p1(CPU *cpu,ACCESS *result) {
         case 4:
             result->type = WRITE;
             result->address = 0x0100 + cpu->S;
-            result->value = cpu->S;
+            result->value = cpu->P;
 
             cpu->S -= 1; break;
         case 5:
@@ -1341,8 +1387,7 @@ uint8_t mode_interrupt_p2(CPU *cpu, uint8_t operand) {
 }
 
 int cpu_tick1(CPU *cpu,ACCESS *result) {
-    cpu->P |= 0x20;
-    cpu->P &= 0xEF;
+    cpu->P |= 0x20; cpu->P &= 0xEF;
     
     result->type = READ;
     result->address = cpu->PC;
