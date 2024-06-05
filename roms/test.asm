@@ -2,8 +2,8 @@
 # But you can use any assembler you want for your own programs
 .cpu 65c02
 
-.val CHR $6C00
-.val PAL $6800
+.val CHR $6800
+.val PAL $6C00
 
 .val KEY_1    $7000
 .val KEY_2    $7010
@@ -108,28 +108,28 @@ lda $F0; sta [PAL+$E0+29]
 # 89AB CDEF
 
 # Print Palette to Screen
-lda $00; sta [$6A88]
-lda $11; sta [$6A89]
-lda $22; sta [$6A8A]
-lda $33; sta [$6A8B]
-lda $44; sta [$6A8C]
-lda $55; sta [$6A8D]
-lda $66; sta [$6A8E]
-lda $77; sta [$6A8F]
+lda $00; sta [PAL+$0288]
+lda $11; sta [PAL+$0289]
+lda $22; sta [PAL+$028A]
+lda $33; sta [PAL+$028B]
+lda $44; sta [PAL+$028C]
+lda $55; sta [PAL+$028D]
+lda $66; sta [PAL+$028E]
+lda $77; sta [PAL+$028F]
 
-lda $88; sta [$6A90]
-lda $99; sta [$6A91]
-lda $AA; sta [$6A92]
-lda $BB; sta [$6A93]
-lda $CC; sta [$6A94]
-lda $DD; sta [$6A95]
-lda $EE; sta [$6A96]
-lda $FF; sta [$6A97]
+lda $88; sta [PAL+$0290]
+lda $99; sta [PAL+$0291]
+lda $AA; sta [PAL+$0292]
+lda $BB; sta [PAL+$0293]
+lda $CC; sta [PAL+$0294]
+lda $DD; sta [PAL+$0295]
+lda $EE; sta [PAL+$0296]
+lda $FF; sta [PAL+$0297]
 
 ldx $00
 __display_font
 # Character Memory
-txa; sta [$6F00+X]
+txa; sta [CHR+$0300+X]
 inx; bne (display_font)
 
 __fim
@@ -150,8 +150,8 @@ __hellotext
     ldx 0
     ___loop
         lda [textWelcome+X]; beq (end)
-        sta [$6C00+X]
-        lda <zColorCur>; sta [$6800+X]
+        sta [CHR+X]
+        lda <zColorCur>; sta [PAL+X]
         inc X
     bra (loop)
     ___end
@@ -159,7 +159,7 @@ __hellotext
 __keytext
     lda textKeyboard.hi; sta <zADDRText+1>
     lda textKeyboard.lo; sta <zADDRText+0>
-    lda $6D; sta <zADDRScreen+1>
+    lda CHR.hi+$01; sta <zADDRScreen+1>
     lda $40+8; sta <zADDRScreen+0>
     jsr [textprint]
     
@@ -187,14 +187,14 @@ __keytext
 __colortext
     lda textPalette.hi; sta <zADDRText+1>
     lda textPalette.lo; sta <zADDRText+0>
-    lda $6E; sta <zADDRScreen+1>
+    lda CHR.hi+$02; sta <zADDRScreen+1>
     lda $40+13; sta <zADDRScreen+0>
     jsr [textprint]
     
 __fonttext
     lda textFont.hi; sta <zADDRText+1>
     lda textFont.lo; sta <zADDRText+0>
-    lda $6E; sta <zADDRScreen+1>
+    lda CHR.hi+$02; sta <zADDRScreen+1>
     lda $C0+14; sta <zADDRScreen+0>
     jsr [textprint]
     

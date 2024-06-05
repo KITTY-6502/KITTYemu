@@ -17,10 +17,10 @@ _RESET
     ldx $00
     __clearloop
         # White Foreground, Black Background
-        lda $F0
+        lda ' '
         sta [$6800+X]; sta [$6900+X]; sta [$6A00+X]; sta [$6B00+X]
         # Space Character
-        lda ' '
+        lda $F0
         sta [$6C00+X]; sta [$6D00+X]; sta [$6E00+X]; sta [$6F00+X]
     inc X; bne (clearloop)
     
@@ -28,7 +28,7 @@ _RESET
     ldx $00
     __printloop
         lda [HelloText+X]; beq (break)
-        sta [$6C00+X]
+        sta [$6800+X]
         inc X
     bra (printloop)
     ___break

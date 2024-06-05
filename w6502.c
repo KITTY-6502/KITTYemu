@@ -4,6 +4,24 @@
 #include <string.h>
 #include <stdint.h>
 
+const uint8_t FLAGb_N =  0x80;
+const uint8_t FLAGb_V =  0x40;
+const uint8_t FLAGb_1 =  0x20;
+const uint8_t FLAGb_B =  0x10;
+const uint8_t FLAGb_D =  0x08;
+const uint8_t FLAGb_I =  0x04;
+const uint8_t FLAGb_Z =  0x02;
+const uint8_t FLAGb_C =  0x01;
+
+const uint8_t FLAGi_N =  0x07;
+const uint8_t FLAGi_V =  0x06;
+const uint8_t FLAGi_1 =  0x05;
+const uint8_t FLAGi_B =  0x04;
+const uint8_t FLAGi_D =  0x03;
+const uint8_t FLAGi_I =  0x02;
+const uint8_t FLAGi_Z =  0x01;
+const uint8_t FLAGi_C =  0x00;
+
 typedef struct cpu {
     uint16_t PC; // Program Counter
     uint8_t A; // Accumulator
@@ -75,17 +93,6 @@ typedef struct opcode {
     
 } OPCODE;
 
-typedef enum FLAGS {
-    FLAG_CARRY,
-    FLAG_ZERO,
-    FLAG_IRQ_DISABLE,
-    FLAG_DECIMAL,
-    FLAG_IRQ_TYPE,
-    FLAG_ONE,
-    FLAG_OVERFLOW,
-    FLAG_NEGATIVE,
-} FLAGS;
-
 typedef enum opcodes {
     NO_OPCODE,
     ADC,AND,ASL,BBR,BBS,BCC,BCS,BEQ,BIT,BMI,
@@ -106,7 +113,7 @@ uint8_t (*add_mode_2[LAST_OPCODE]) (CPU *cpu, uint8_t operand);
 
 int cpu_opend(CPU *cpu) {
     cpu->C = 0;
-    cpu->P |= 0x20; cpu->P &= 0xEF;
+    //cpu->P |= 0x20; cpu->P &= 0xEF;
 }
 
 uint8_t op_codes[256] = {
@@ -200,7 +207,7 @@ uint8_t adc_p1(CPU *cpu,ACCESS *result) {
 }
 uint8_t adc_p2(CPU *cpu, uint8_t operand) {
     uint8_t acc = cpu->A;
-    uint8_t add = operand + ((cpu->P >> FLAG_CARRY) & 1);
+    uint8_t add = operand + ((cpu->P >> FLAGi_C) & 1);
     uint16_t result = cpu->A + add;
     cpu->A = result & 0xFF;
     
@@ -209,10 +216,10 @@ uint8_t adc_p2(CPU *cpu, uint8_t operand) {
      
     uint8_t M = acc & 0x80;
     uint8_t N = operand & 0x80;
-    cpu->P |= ( ((M^cpu->A)&(N^cpu->A)&0x80) != 0)<< FLAG_OVERFLOW;
+    cpu->P |= ( ((M^cpu->A)&(N^cpu->A)&0x80) != 0)<< FLAGi_V;
     
     cpu->P = calc_NZ(cpu->P,cpu->A);
-    cpu->P |= (result > 0xFF) << FLAG_CARRY;
+    cpu->P |= (result > 0xFF) << FLAGi_C;
     
     return operand;
 }
@@ -222,7 +229,7 @@ uint8_t sbc_p1(CPU *cpu,ACCESS *result) {
 }
 uint8_t sbc_p2(CPU *cpu, uint8_t operand) {
     uint8_t acc = cpu->A;
-    uint8_t sub = operand + (! ((cpu->P >> FLAG_CARRY) & 1 ));
+    uint8_t sub = operand + (! ((cpu->P >> FLAGi_C) & 1 ));
     cpu->A = cpu->A - sub;
     
     // Set Flags
@@ -230,10 +237,10 @@ uint8_t sbc_p2(CPU *cpu, uint8_t operand) {
     
     uint8_t M = acc & 0x80;
     uint8_t N = (255-sub) & 0x80;
-    cpu->P |= ( ((M^cpu->A)&(N^cpu->A)&0x80) != 0)<< FLAG_OVERFLOW;
+    cpu->P |= ( ((M^cpu->A)&(N^cpu->A)&0x80) != 0)<< FLAGi_V;
     
     cpu->P = calc_NZ(cpu->P,cpu->A);
-    cpu->P |= (cpu->A < acc) << FLAG_CARRY;
+    cpu->P |= (cpu->A < acc) << FLAGi_C;
     
     return operand;
 }
@@ -295,8 +302,8 @@ uint8_t cmp_p2(CPU *cpu, uint8_t operand) {
     
     // Set Flags
     cpu->P = cpu->P & 0x7C;
-    //cpu->P |= (acc_1 > 127 && acc_2 <= 127) << FLAG_OVERFLOW;
-    cpu->P |= (acc_1 >= operand) << FLAG_CARRY;
+    //cpu->P |= (acc_1 > 127 && acc_2 <= 127) << FLAGi_V;
+    cpu->P |= (acc_1 >= operand) << FLAGi_C;
     //printf("CPM MOMENT %X %X",acc_1,acc_2);
     cpu->P = calc_NZ(cpu->P,acc_2);
     
@@ -316,8 +323,8 @@ uint8_t cpx_p2(CPU *cpu, uint8_t operand) {
     
     
     //printf("CPX MOMENT %X %X",acc_1,acc_2);
-    //cpu->P |= (acc_1 > 127 && acc_2 <= 127) << FLAG_OVERFLOW;
-    cpu->P |= (acc_1 >= operand) << FLAG_CARRY;
+    //cpu->P |= (acc_1 > 127 && acc_2 <= 127) << FLAGS_V;
+    cpu->P |= (acc_1 >= operand) << FLAGi_C;
     cpu->P = calc_NZ(cpu->P,acc_2);
     
     return operand;
@@ -332,8 +339,8 @@ uint8_t cpy_p2(CPU *cpu, uint8_t operand) {
     
     // Set Flags
     cpu->P = cpu->P & 0x7C;
-    //cpu->P |= (acc_1 > 127 && acc_2 <= 127) << FLAG_OVERFLOW;
-    cpu->P |= (acc_1 >= operand) << FLAG_CARRY;
+    //cpu->P |= (acc_1 > 127 && acc_2 <= 127) << FLAGS_V;
+    cpu->P |= (acc_1 >= operand) << FLAGi_C;
     cpu->P = calc_NZ(cpu->P,acc_2);
     
     return operand;
@@ -750,46 +757,46 @@ uint8_t sec_p1(CPU *cpu,ACCESS *result) {
     result->type = READ; result->address = cpu->PC;
 }
 uint8_t sec_p2(CPU *cpu, uint8_t operand) {
-    cpu->P = cpu->P | 0x01; return operand;
+    cpu->P = cpu->P | FLAGb_C; return operand;
 }
 uint8_t clc_p1(CPU *cpu,ACCESS *result) {
     result->type = READ; result->address = cpu->PC;
 }
 uint8_t clc_p2(CPU *cpu, uint8_t operand) {
-    cpu->P = cpu->P & 0xFE; return operand;
+    cpu->P = cpu->P & (FLAGb_C ^ 0xFF); return operand;
 }
  // Decimal
 uint8_t sed_p1(CPU *cpu,ACCESS *result) {
     result->type = READ; result->address = cpu->PC;
 }
 uint8_t sed_p2(CPU *cpu, uint8_t operand) {
-    cpu->P = cpu->P | 0x08; return operand;
+    cpu->P = cpu->P | FLAGb_D; return operand;
 }
 uint8_t cld_p1(CPU *cpu,ACCESS *result) {
     result->type = READ; result->address = cpu->PC;
 }
 uint8_t cld_p2(CPU *cpu, uint8_t operand) {
-    cpu->P = cpu->P & 0xF7; return operand;
+    cpu->P = cpu->P & (FLAGb_D ^ 0xFF); return operand;
 }
  // Interrupt
 uint8_t sei_p1(CPU *cpu,ACCESS *result) {
     result->type = READ; result->address = cpu->PC;
 }
 uint8_t sei_p2(CPU *cpu, uint8_t operand) {
-    cpu->P = cpu->P | 0x04; return operand;
+    cpu->P = cpu->P | FLAGb_I; return operand;
 }
 uint8_t cli_p1(CPU *cpu,ACCESS *result) {
     result->type = READ; result->address = cpu->PC;
 }
 uint8_t cli_p2(CPU *cpu, uint8_t operand) {
-    cpu->P = cpu->P & 0xFB; return operand;
+    cpu->P = cpu->P & (FLAGb_I ^ 0xFF); return operand;
 }
  // Overflow
 uint8_t clv_p1(CPU *cpu,ACCESS *result) {
     result->type = READ; result->address = cpu->PC;
 }
 uint8_t clv_p2(CPU *cpu, uint8_t operand) {
-    cpu->P = cpu->P & 0xBf; return operand;
+    cpu->P = cpu->P & (FLAGb_V ^ 0xFF); return operand;
 }
 
 /*============================
@@ -1340,7 +1347,6 @@ uint8_t mode_pull_p2(CPU *cpu, uint8_t operand) {
 
 uint8_t mode_interrupt_p1(CPU *cpu,ACCESS *result) {
     cpu->C += 1;
-    cpu->P |= 0x04;
     switch (cpu->C) {
         case 1:
             result->type = READ;
@@ -1361,7 +1367,8 @@ uint8_t mode_interrupt_p1(CPU *cpu,ACCESS *result) {
             result->type = WRITE;
             result->address = 0x0100 + cpu->S;
             result->value = cpu->P;
-
+            cpu->P |= FLAGb_I;
+            
             cpu->S -= 1; break;
         case 5:
             result->type = READ;
@@ -1387,13 +1394,14 @@ uint8_t mode_interrupt_p2(CPU *cpu, uint8_t operand) {
 }
 
 int cpu_tick1(CPU *cpu,ACCESS *result) {
-    cpu->P |= 0x20; cpu->P &= 0xEF;
+    cpu->P |= FLAGb_1;
     
     result->type = READ;
     result->address = cpu->PC;
     
-    if ( ((cpu->IRQ && !(cpu->P & 0x04)) || cpu->NMI || cpu->RESET) && cpu->C == 0) {
+    if ( ((cpu->IRQ && !(cpu->P & FLAGb_I)) || cpu->NMI || cpu->RESET) && cpu->C == 0) {
         cpu->IN_INTERRUPT = 1;
+        //printf("INTERRUPT");
     }
     
     if (cpu->RESET || cpu->IN_INTERRUPT) {

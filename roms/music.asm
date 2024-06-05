@@ -402,4 +402,4 @@ _CtrlWords
 .word reset
 .word Main
 
-.pad $8000*15
+#.pad $8000*15
