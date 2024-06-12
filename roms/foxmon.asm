@@ -1,15 +1,15 @@
 .cpu 65c02
 
-.var char_timer $10
-.var line_buffer   $0200
-.var char_cur      $11
-.var line_buffer_i $12
-.var line_buffer_l $13
+.val char_timer $10
+.val line_buffer   $0200
+.val char_cur      $11
+.val line_buffer_i $12
+.val line_buffer_l $13
 
 
-.var keyboard_cache $14
-.var line_cur       $20
-.var serial_active  $30
+.val keyboard_cache $14
+.val line_cur       $20
+.val serial_active  $30
 
 .org [$1000]
 _nmi
@@ -40,8 +40,8 @@ _serialcheck
     lda %00_00_0_11_1; sta [$8002]
     
     # Serial Enabled Icon
-    lda $F8; sta [$681F]
-    lda 's'; sta [$6C1F]
+    lda $F8; sta [$6C1F]
+    lda 's'; sta [$681F]
     
     __noserial
     # return to bank 0
@@ -86,7 +86,7 @@ __noserial
 
 lda <line_buffer_i>
 lda $E0; sta <line_cur>
-lda $6F; sta <line_cur+1>
+lda $6B; sta <line_cur+1>
 
 sei
 stz [char_cur]
@@ -154,11 +154,11 @@ bmi (specialchar)
 sta <$00>   # char to write
 sec; sbc 32; tax
 __normalchar
-lda $01; bit <keyboard_cache+2>; beq (noshift)
+lda $80; bit <keyboard_cache+2>; beq (noshift)
 lda [kShift+X]; sta <$00>
 bra (modend)
 ___noshift
-lda $01; bit <keyboard_cache+1>; beq (modend)
+lda $80; bit <keyboard_cache+3>; beq (modend)
 lda [kAlt+X]; sta <$00>
 bra (modend)
 
@@ -191,7 +191,7 @@ jsr [Clear]; bra (break)
 ___testarrow
 cmp $F0; bmi (break)
 ____nobreak
-tax; lda $01; bit <keyboard_cache+1>; beq (arrowmove)
+tax; lda $80; bit <keyboard_cache+3>; beq (arrowmove)
 txa; sta <$00>
 jmp [modend]
 ____arrowmove
@@ -221,7 +221,7 @@ __break
 # $00/01 → pointer to color of cursor
 ldy <line_buffer_l>
 lda <line_cur>; sta <$00>
-lda <line_cur+1>; sec; sbc $04; sta <$01>
+lda <line_cur+1>; clc; adc $04; sta <$01>
 lda $F0; sta [<$00>+Y]
 
 # Blinking: clear timer if a char was input
@@ -234,7 +234,7 @@ ldx $F0
 __next
 ldy <line_buffer_i>
 lda <line_cur>; sta <$00>
-lda <line_cur+1>; sec; sbc $04; sta <$01>
+lda <line_cur+1>; clc; adc $04; sta <$01>
 txa; sta [<$00>+Y]
 
 inc <char_timer>
@@ -333,15 +333,15 @@ rts
     rts
     __peek
         lda [<$08>]; jsr [HexToText]
-        lda <$00>; sta [$6FFE]
-        lda <$01>; sta [$6FFF]
+        lda <$00>; sta [$6BFE]
+        lda <$01>; sta [$6BFF]
     rts
     __cmdend
     lda $00; sta <$00>
-    lda $6C; sta <$01>
+    lda $68; sta <$01>
     
     lda $E0; sta <$02>
-    lda $6B; sta <$03>
+    lda $67; sta <$03>
     
     ldx 4
     ldy $40
@@ -355,7 +355,7 @@ rts
     ldx $E0
     lda ' '
     ___spaceloop
-        sta [$6F00+X]
+        sta [$6B00+X]
     inc X; bne (spaceloop)
     jsr [Clear]
     rts
@@ -402,22 +402,22 @@ _tHex
 #--------------------------
 # Keyboard Layout
 _kKeys7
-.byte 'o','p',$80,$81,$F2
+.byte $00,$00,$00,$00,$82
 _kKeys6
-.byte 'i','k','l','.',$F3
+.byte 'x','z','a','q','w'
 _kKeys5
-.byte 'u','j','m','|',$F0
+.byte 'c','f','d','s','e'
 _kKeys4
-.byte 't','y','h','n',$F1
+.byte ' ','b','v','g','r'
 
 _kKeys3
-.byte 'r','g','v','b',' '
+.byte $F1,'n','h','y','t'
 _kKeys2
-.byte 'e','s','d','f','c'
+.byte $F0,'|','m','j','u'
 _kKeys1
-.byte 'w','q','a','z','x'
+.byte $F3,'.','l','k','i'
 _kKeys0
-.byte $82,$00,$00,$00,$00
+.byte $F2,$81,$80,'p','o'
 
 _kShift
 .byte $20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$2A,$2B,$2C,$2D,',',$2F
@@ -434,7 +434,6 @@ _kAlt
 .byte $60,'@',';',$63,$64,'3',$66,$67,$68,'8',$6A,$6B,$6C,$6D,$6E,'9'
 .byte '0','1','4',$73,'5','7',$76,'2',$78,'6',$7A,$7B,$7C,$7D,$7E,$7F
 
-
 .pad [$2000]
 .org [$9000]
 
@@ -448,19 +447,19 @@ dec X; bpl (muteloop)
 ldx $00
 __clrscreen
     stz [$0200+X]
-    lda ' '
-    sta [$6C00+X]; sta [$6D00+X]; sta [$6E00+X]; sta [$6F00+X]
     lda $F0
+    sta [$6C00+X]; sta [$6D00+X]; sta [$6E00+X]; sta [$6F00+X]
+    lda ' '
     sta [$6800+X]; sta [$6900+X]; sta [$6A00+X]; sta [$6B00+X]
 inc X; bne (clrscreen)
 
 ldx $00
 __printheader
     lda [tHeader+X]; beq (break)
-    sta [$6C00+X]
+    sta [$6800+X]
     
     lda [tHeaderColor+X]
-    sta [$6800+X]
+    sta [$6C00+X]
     
     inc X; bra (printheader)
 ___break
@@ -495,9 +494,9 @@ jmp [start]
 
 # Text
 _tHeader
-.byte $D1
+.byte $A1
 .byte 'foxmon'
-.byte $D1,$D1,$D1,$D1,$D1,$D1,$D1,$D1,$00
+.byte $A1,$A1,$A1,$A1,$A1,$A1,$A1,$A1,$00
 
 _tHeaderColor
 .byte $0F

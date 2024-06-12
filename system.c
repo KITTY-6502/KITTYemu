@@ -170,7 +170,7 @@ uint8_t system_access(CPU *cpu,ACCESS *result) {
             int row = (result->address & 0xF0) >> 4;
             uint8_t alt = os_keyboard[SDL_SCANCODE_LALT] || os_keyboard[SDL_SCANCODE_RALT];
             
-            int alt_list[10] = {
+            int alt_list[21] = {
                 SDL_SCANCODE_0,
                 SDL_SCANCODE_1,
                 SDL_SCANCODE_2,
@@ -181,11 +181,36 @@ uint8_t system_access(CPU *cpu,ACCESS *result) {
                 SDL_SCANCODE_7,
                 SDL_SCANCODE_8,
                 SDL_SCANCODE_9,
+                
+                SDL_SCANCODE_KP_0,
+                SDL_SCANCODE_KP_1,
+                SDL_SCANCODE_KP_2,
+                SDL_SCANCODE_KP_3,
+                SDL_SCANCODE_KP_4,
+                SDL_SCANCODE_KP_5,
+                SDL_SCANCODE_KP_6,
+                SDL_SCANCODE_KP_7,
+                SDL_SCANCODE_KP_8,
+                SDL_SCANCODE_KP_9,
+                
+                SDL_SCANCODE_DELETE,
             };
             
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 21; i++) {
                 if (os_keyboard[alt_list[i]]) {
                     alt = 1;
+                }
+            }
+            
+            uint8_t shift = os_keyboard[SDL_SCANCODE_LSHIFT] || os_keyboard[SDL_SCANCODE_RSHIFT];
+            
+            int shift_list[1] = {
+                SDL_SCANCODE_DELETE,
+            };
+            
+            for (int i = 0; i < 1; i++) {
+                if (os_keyboard[shift_list[i]]) {
+                    shift = 1;
                 }
             }
             
@@ -201,13 +226,13 @@ uint8_t system_access(CPU *cpu,ACCESS *result) {
                     if (os_keyboard[SDL_SCANCODE_O]) operand        |= 0x01;
                     
                     // numbers
-                    if (os_keyboard[SDL_SCANCODE_2]) operand        |= 0x80;
-                    if (os_keyboard[SDL_SCANCODE_3]) operand        |= 0x40;
-                    if (os_keyboard[SDL_SCANCODE_4]) operand        |= 0x20;
-                    if (os_keyboard[SDL_SCANCODE_5]) operand        |= 0x10;
-                    if (os_keyboard[SDL_SCANCODE_7]) operand        |= 0x08;
-                    if (os_keyboard[SDL_SCANCODE_8]) operand        |= 0x04;
-                    if (os_keyboard[SDL_SCANCODE_9]) operand        |= 0x02;
+                    if (os_keyboard[SDL_SCANCODE_2] | os_keyboard[SDL_SCANCODE_KP_2]) operand        |= 0x40;
+                    if (os_keyboard[SDL_SCANCODE_3] | os_keyboard[SDL_SCANCODE_KP_3]) operand        |= 0x20;
+                    if (os_keyboard[SDL_SCANCODE_4] | os_keyboard[SDL_SCANCODE_KP_4]) operand        |= 0x10;
+                    if (os_keyboard[SDL_SCANCODE_5] | os_keyboard[SDL_SCANCODE_KP_5]) operand        |= 0x08;
+                    if (os_keyboard[SDL_SCANCODE_7] | os_keyboard[SDL_SCANCODE_KP_7]) operand        |= 0x04;
+                    if (os_keyboard[SDL_SCANCODE_8] | os_keyboard[SDL_SCANCODE_KP_8]) operand        |= 0x02;
+                    if (os_keyboard[SDL_SCANCODE_9] | os_keyboard[SDL_SCANCODE_KP_9]) operand        |= 0x01;
                     
                     break;
                 case 3:
@@ -221,20 +246,21 @@ uint8_t system_access(CPU *cpu,ACCESS *result) {
                     if (os_keyboard[SDL_SCANCODE_P]) operand        |= 0x01;
                     
                     // numbers
-                    if (os_keyboard[SDL_SCANCODE_1]) operand        |= 0x80;
-                    if (os_keyboard[SDL_SCANCODE_6]) operand        |= 0x10;
-                    if (os_keyboard[SDL_SCANCODE_0]) operand        |= 0x02;
+                    if (os_keyboard[SDL_SCANCODE_1] | os_keyboard[SDL_SCANCODE_KP_1]) operand        |= 0x40;
+                    if (os_keyboard[SDL_SCANCODE_6] | os_keyboard[SDL_SCANCODE_KP_6]) operand        |= 0x08;
+                    if (os_keyboard[SDL_SCANCODE_0] | os_keyboard[SDL_SCANCODE_KP_0]) operand        |= 0x01;
                     
                     break;
                 case 2:
-                    if (os_keyboard[SDL_SCANCODE_LSHIFT]) operand   |= 0x80;
+                    if (shift) operand   |= 0x80;
                     if (os_keyboard[SDL_SCANCODE_A]) operand        |= 0x40;
                     if (os_keyboard[SDL_SCANCODE_D]) operand        |= 0x20;
                     if (os_keyboard[SDL_SCANCODE_V]) operand        |= 0x10;
                     if (os_keyboard[SDL_SCANCODE_H]) operand        |= 0x08;
                     if (os_keyboard[SDL_SCANCODE_M]) operand        |= 0x04;
                     if (os_keyboard[SDL_SCANCODE_L]) operand        |= 0x02;
-                    if (os_keyboard[SDL_SCANCODE_BACKSPACE]) operand|= 0x01;
+                    if (os_keyboard[SDL_SCANCODE_BACKSPACE] |
+                        os_keyboard[SDL_SCANCODE_DELETE]) operand|= 0x01;
                     
                     break;
                 case 1:
@@ -245,7 +271,8 @@ uint8_t system_access(CPU *cpu,ACCESS *result) {
                     if (os_keyboard[SDL_SCANCODE_N]) operand        |= 0x08;
                     if (os_keyboard[SDL_SCANCODE_COMMA]) operand    |= 0x04;
                     if (os_keyboard[SDL_SCANCODE_PERIOD]) operand   |= 0x02;
-                    if (os_keyboard[SDL_SCANCODE_RETURN]) operand   |= 0x01;
+                    if (os_keyboard[SDL_SCANCODE_RETURN] |
+                        os_keyboard[SDL_SCANCODE_KP_ENTER]) operand   |= 0x01;
                     break;
                 case 0:
                     if (os_keyboard[SDL_SCANCODE_LCTRL]) operand    |= 0x80;

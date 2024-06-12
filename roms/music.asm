@@ -26,10 +26,10 @@ _reset
     # Clear Screen
     ldx 0
     __ClearScreen
-        lda $F0
+        lda ' '
         sta [$6800+X]; sta [$6900+X]; sta [$6A00+X]; sta [$6B00+X]
         
-        lda ' '
+        lda $F0
         sta [$6C00+X]; sta [$6D00+X]; sta [$6E00+X]; sta [$6F00+X]
     inc X; bne (ClearScreen)
     
@@ -37,21 +37,21 @@ _reset
     ldy 32*4
     ldx '4'
     __chtext
-        lda 'C'; sta [$6C00+Y]
-        lda 'h'; sta [$6C01+Y]
-        txa    ; sta [$6C02+Y]
+        lda 'C'; sta [$6800+Y]
+        lda 'h'; sta [$6801+Y]
+        txa    ; sta [$6802+Y]
         dec X
     tya; sec; sbc 32; tay; bne (chtext)
     
-    lda 'T'; sta [$6C05]; lda 'i'; sta [$6C06]; lda 'm'; sta [$6C07]; lda 'e'; sta [$6C08]
-    lda 'N'; sta [$6C0B]; lda 'o'; sta [$6C0C]; lda 't'; sta [$6C0D]; lda 'e'; sta [$6C0E]
-    lda 'V'; sta [$6C11]; lda 'o'; sta [$6C12]; lda 'l'; sta [$6C13]; lda '.'; sta [$6C14]
-    lda 'W'; sta [$6C17]; lda 'a'; sta [$6C18]; lda 'v'; sta [$6C19]; lda 'e'; sta [$6C1A]
+    lda 'T'; sta [$6805]; lda 'i'; sta [$6806]; lda 'm'; sta [$6807]; lda 'e'; sta [$6808]
+    lda 'N'; sta [$680B]; lda 'o'; sta [$680C]; lda 't'; sta [$680D]; lda 'e'; sta [$680E]
+    lda 'V'; sta [$6811]; lda 'o'; sta [$6812]; lda 'l'; sta [$6813]; lda '.'; sta [$6814]
+    lda 'W'; sta [$6817]; lda 'a'; sta [$6818]; lda 'v'; sta [$6819]; lda 'e'; sta [$681A]
     
-    lda $0F; sta [$6805]; sta [$6806]; sta [$6807]; sta [$6808]
-    lda $0F; sta [$680B]; sta [$680C]; sta [$680D]; sta [$680E]
-    lda $0F; sta [$6811]; sta [$6812]; sta [$6813]; sta [$6814]
-    lda $0F; sta [$6817]; sta [$6818]; sta [$6819]; sta [$681A]
+    lda $0F; sta [$6C05]; sta [$6C06]; sta [$6C07]; sta [$6C08]
+    lda $0F; sta [$6C0B]; sta [$6C0C]; sta [$6C0D]; sta [$6C0E]
+    lda $0F; sta [$6C11]; sta [$6C12]; sta [$6C13]; sta [$6C14]
+    lda $0F; sta [$6C17]; sta [$6C18]; sta [$6C19]; sta [$6C1A]
     
     # Init Music Variables
     ldx $00
@@ -121,15 +121,15 @@ _ShowRegs
     txa; asl A; asl A; asl A; asl A; asl A; tay
     
     lda <ch_wait_tick+X>; jsr [HexToText]
-    lda <$00>; sta [$6C25+Y]; lda <$01>; sta [$6C26+Y]
+    lda <$00>; sta [$6825+Y]; lda <$01>; sta [$6826+Y]
     lda <ch_wait_note+X>; jsr [HexToText]
-    lda <$00>; sta [$6C27+Y]; lda <$01>; sta [$6C28+Y]
+    lda <$00>; sta [$6827+Y]; sta [$6C27+Y]; lda <$01>; sta [$6828+Y]; sta [$6C28+Y]
 
     lda <ch_note+X>; jsr [HexToText]
-    lda <$00>; sta [$6C2C+Y]; lda <$01>; sta [$6C2D+Y]
+    lda <$00>; sta [$682C+Y]; lda <$01>; sta [$682D+Y]
     
     lda <ch_volume+X>; jsr [HexToText]
-    lda <$00>; sta [$6C32+Y]; lda <$01>; sta [$6C33+Y]
+    lda <$00>; sta [$6832+Y]; lda <$01>; sta [$6833+Y]
     
     #lda <ch_wave+X>; jsr [HexToText]
     #lda <$00>; sta [$6C38+Y]; lda <$01>; sta [$6C39+Y]
