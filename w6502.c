@@ -240,7 +240,7 @@ uint8_t sbc_p2(CPU *cpu, uint8_t operand) {
     cpu->P |= ( ((M^cpu->A)&(N^cpu->A)&0x80) != 0)<< FLAGi_V;
     
     cpu->P = calc_NZ(cpu->P,cpu->A);
-    cpu->P |= (cpu->A < acc) << FLAGi_C;
+    cpu->P |= (cpu->A <= acc) << FLAGi_C;
     
     return operand;
 }
@@ -297,15 +297,18 @@ uint8_t cmp_p1(CPU *cpu,ACCESS *result) {
     result->address = cpu->TARGET;
 }
 uint8_t cmp_p2(CPU *cpu, uint8_t operand) {
-    uint8_t acc_1 = cpu->A;
-    uint8_t acc_2 = cpu->A - operand;
+    uint8_t acc = cpu->A;
+    uint8_t sub = operand;
+    uint8_t result = acc- sub;
     
     // Set Flags
-    cpu->P = cpu->P & 0x7C;
-    //cpu->P |= (acc_1 > 127 && acc_2 <= 127) << FLAGi_V;
-    cpu->P |= (acc_1 >= operand) << FLAGi_C;
-    //printf("CPM MOMENT %X %X",acc_1,acc_2);
-    cpu->P = calc_NZ(cpu->P,acc_2);
+    cpu->P = cpu->P & 0x3C;
+    
+    uint8_t M = acc & 0x80;
+    uint8_t N = (255-sub) & 0x80;
+    
+    cpu->P = calc_NZ(cpu->P,result);
+    cpu->P |= (result <= acc) << FLAGi_C;
     
     return operand;
 }
@@ -315,17 +318,18 @@ uint8_t cpx_p1(CPU *cpu,ACCESS *result) {
     result->address = cpu->TARGET;
 }
 uint8_t cpx_p2(CPU *cpu, uint8_t operand) {
-    uint8_t acc_1 = cpu->X;
-    uint8_t acc_2 = cpu->X - operand;
+    uint8_t acc = cpu->X;
+    uint8_t sub = operand;
+    uint8_t result = acc- sub;
     
     // Set Flags
-    cpu->P = cpu->P & 0x7C;
+    cpu->P = cpu->P & 0x3C;
     
+    uint8_t M = acc & 0x80;
+    uint8_t N = (255-sub) & 0x80;
     
-    //printf("CPX MOMENT %X %X",acc_1,acc_2);
-    //cpu->P |= (acc_1 > 127 && acc_2 <= 127) << FLAGS_V;
-    cpu->P |= (acc_1 >= operand) << FLAGi_C;
-    cpu->P = calc_NZ(cpu->P,acc_2);
+    cpu->P = calc_NZ(cpu->P,result);
+    cpu->P |= (result <= acc) << FLAGi_C;
     
     return operand;
 }
@@ -334,14 +338,18 @@ uint8_t cpy_p1(CPU *cpu,ACCESS *result) {
     result->address = cpu->TARGET;
 }
 uint8_t cpy_p2(CPU *cpu, uint8_t operand) {
-    uint8_t acc_1 = cpu->Y;
-    uint8_t acc_2 = cpu->Y - operand;
+    uint8_t acc = cpu->Y;
+    uint8_t sub = operand;
+    uint8_t result = acc- sub;
     
     // Set Flags
-    cpu->P = cpu->P & 0x7C;
-    //cpu->P |= (acc_1 > 127 && acc_2 <= 127) << FLAGS_V;
-    cpu->P |= (acc_1 >= operand) << FLAGi_C;
-    cpu->P = calc_NZ(cpu->P,acc_2);
+    cpu->P = cpu->P & 0x3C;
+    
+    uint8_t M = acc & 0x80;
+    uint8_t N = (255-sub) & 0x80;
+    
+    cpu->P = calc_NZ(cpu->P,result);
+    cpu->P |= (result <= acc) << FLAGi_C;
     
     return operand;
 }
