@@ -35,6 +35,8 @@ const int system_psg_buff_size = 2000000;
 float system_psg_samples[2000000];
 int system_psg_sample_index = 0;
 
+const int BUS_CLOCK = 3500000;
+
 int cur_cycle = 7;
 
 int font[256][8][8];
@@ -496,7 +498,7 @@ int main(int argc, char *argv[])
     
     SDL_Event event;
     while (!quit) {
-        if (cycle_count >= (384/2)*312 || cycle_count == -1) {
+        if (cycle_count >= (BUS_CLOCK/15625)*312 || cycle_count == -1) {
             if (!time_left()) {
             render_screen(system_screen);
             

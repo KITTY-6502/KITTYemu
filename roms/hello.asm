@@ -22,7 +22,7 @@ _RESET
         # Space Character
         lda $F0
         sta [$6C00+X]; sta [$6D00+X]; sta [$6E00+X]; sta [$6F00+X]
-    inc X; bne (clearloop)
+    inc X; bra (clearloop)
     
     # We are now done with the initial system cleanup, print hello world
     ldx $00

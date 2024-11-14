@@ -17,6 +17,10 @@
 .val OSC_CTRL $70E3
 
 .org [$0000]
+.var r0
+.var r1
+.var r2
+
 .var zADDRText 2
 .var zADDRScreen 2
 .var zColorCur
@@ -132,6 +136,37 @@ __display_font
 txa; sta [CHR+$0300+X]
 inx; bne (display_font)
 
+# ------------------------------------------------------
+# CPU speed calc
+
+wai
+stz <r0>; stz <r1>; stz <r2>
+clc
+sed
+wai
+
+# Should take 200 cycles per loop
+# 26+loops*5-1
+
+__calcloop
+  ldx 35                     # 2
+  ___delay
+  dec X; bne (delay)          # loops*(2+3)-1
+  # Calculation (24)
+  lda <r0>; adc 1; sta <r0>   # 3+2+3 (8)
+  lda <r1>; adc 0; sta <r1>   # 3+2+3 (8)
+  cli                         # 2
+lda <r2>; beq (calcloop)      # 3+3   (6)
+cld
+lda <r1>; and $F0; lsr A; lsr A; lsr A; lsr A; clc; adc $30
+  sta [CHR+$47]
+lda <r1>; and $0F; clc; adc $30;
+  sta [CHR+$48]
+lda <r0>; and $F0; lsr A; lsr A; lsr A; lsr A; clc; adc $30
+  sta [CHR+$4A]
+lda <r0>; and $0F; clc; adc $30;
+  sta [CHR+$4B]
+
 __fim
 cli
 bra (fim)
@@ -139,7 +174,9 @@ bra (fim)
 #---------------------------------------------------------
 # INTERUPT REQUEST
 _irq
+pha; phx
 sei
+lda 1; sta <r2>
 
 dec <zColorTimer>; bne (next)
     inc <zColorCur>
@@ -205,6 +242,7 @@ __fonttext
     #sta [$70F1]
     #sta [$70F2]
 cli
+plx; pla
 rti
 
 #----------------------------
@@ -236,7 +274,7 @@ rts
 _textWelcome
 .byte " Hello! Welcome to my Computer! "
 _textSpecs
-.byte "65c02 with custom video + sound! "
+.byte "65c02 @  .  Mhz, 28K RAM, Custom video + sound! "
 _textLoad
 .byte " Drag & Drop a ROM to run!  "
 _textPalette

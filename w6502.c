@@ -207,15 +207,25 @@ uint8_t adc_p1(CPU *cpu,ACCESS *result) {
 }
 uint8_t adc_p2(CPU *cpu, uint8_t operand) {
     uint8_t acc = cpu->A;
-    uint8_t add = operand + ((cpu->P >> FLAGi_C) & 1);
-    uint16_t result = cpu->A + add;
+    uint16_t result;
+    uint8_t carry = ((cpu->P >> FLAGi_C) & 1);
+    
+    if ( (cpu->P >> FLAGi_D) & 1) {
+      result = (cpu->A & 0x0F) + (operand & 0x0F) + carry;
+      if (result > 0x09) result += 0x06;
+      result = (cpu->A & 0xF0) + (operand & 0xF0) + result;
+      if (result > 0x99) result += 0x60;
+    } else {
+      result = cpu->A + operand + carry;
+    }
+    
     cpu->A = result & 0xFF;
     
     // Set Flags
     cpu->P = cpu->P & 0x3C;
      
     uint8_t M = acc & 0x80;
-    uint8_t N = operand & 0x80;
+    uint8_t N = (operand + carry)& 0x80;
     cpu->P |= ( ((M^cpu->A)&(N^cpu->A)&0x80) != 0)<< FLAGi_V;
     
     cpu->P = calc_NZ(cpu->P,cpu->A);
@@ -229,9 +239,18 @@ uint8_t sbc_p1(CPU *cpu,ACCESS *result) {
 }
 uint8_t sbc_p2(CPU *cpu, uint8_t operand) {
     uint8_t acc = cpu->A;
-    uint8_t sub = operand + (! ((cpu->P >> FLAGi_C) & 1 ));
-    cpu->A = cpu->A - sub;
-    
+    uint8_t carry = (! ((cpu->P >> FLAGi_C) & 1 ));
+    uint8_t sub = operand + carry;
+    uint16_t result;
+    if ((cpu->P >> FLAGi_D) & 1) {
+      result = (cpu->A & 0x0F) - (operand & 0x0F) - carry;
+      if ( (result & 0x0F) <= 0xFFFF) result -= 6;
+      result = (cpu->A & 0xF0) - (operand & 0xF0) + result;
+      if ( (result & 0xF0) > 0x90) result -= 0x60;
+    } else {
+     result = cpu->A - sub;
+    }
+    cpu->A = result&0xFF;
     // Set Flags
     cpu->P = cpu->P & 0x3C;
     
@@ -473,149 +492,56 @@ uint8_t lsr_p2(CPU *cpu, uint8_t operand) {
 /*============================
     BRANCHING
  ===========================*/
-// Branch on Carry Clear
-uint8_t bcc_p1(CPU *cpu,ACCESS *result) {
-    result->type = READ;
-    result->address = cpu->TARGET;
-}
-uint8_t bcc_p2(CPU *cpu, uint8_t operand) { 
-    if (!(cpu->P & 0x01)) {
-        if (operand <= 127) {
-            cpu->PC = cpu->PC + operand;
-        } else {
-            cpu->PC = cpu->PC - (255 - operand) - 1;
-        }
-    }
-    
-    return operand;
-}
-// Branch on Carry Set
-uint8_t bcs_p1(CPU *cpu,ACCESS *result) {
-    result->type = READ;
-    result->address = cpu->TARGET;
-}
-uint8_t bcs_p2(CPU *cpu, uint8_t operand) { 
-    if ((cpu->P & 0x01)) {
-        if (operand <= 127) {
-            cpu->PC = cpu->PC + operand;
-        } else {
-            cpu->PC = cpu->PC - (255 - operand) - 1;
-        }
-    }
-    
-    return operand;
-}
-// Branch on Not Equal (zero clear)
-uint8_t bne_p1(CPU *cpu,ACCESS *result) {
-    result->type = READ;
-    result->address = cpu->TARGET;
-}
-uint8_t bne_p2(CPU *cpu, uint8_t operand) { 
-    if (!(cpu->P & 0x02)) {
-        if (operand <= 127) {
-            cpu->PC = cpu->PC + operand;
-        } else {
-            cpu->PC = cpu->PC - (255 - operand) - 1;
-        }
-    }
-    
-    return operand;
-}
-// Branch on Equal (zero set)
-uint8_t beq_p1(CPU *cpu,ACCESS *result) {
-    result->type = READ;
-    result->address = cpu->TARGET;
-}
-uint8_t beq_p2(CPU *cpu, uint8_t operand) { 
-    if ((cpu->P & 0x02)) {
-        if (operand <= 127) {
-            cpu->PC = cpu->PC + operand;
-        } else {
-            cpu->PC = cpu->PC - (255 - operand) - 1;
-        }
-    }
-    
-    return operand;
-}
-// Branch on Overflow Clear
-uint8_t bvc_p1(CPU *cpu,ACCESS *result) {
-    result->type = READ;
-    result->address = cpu->TARGET;
-}
-uint8_t bvc_p2(CPU *cpu, uint8_t operand) { 
-    if (!(cpu->P & 0x40)) {
-        if (operand <= 127) {
-            cpu->PC = cpu->PC + operand;
-        } else {
-            cpu->PC = cpu->PC - (255 - operand) - 1;
-        }
-    }
-    
-    return operand;
-}
-// Branch on Overflow Set
-uint8_t bvs_p1(CPU *cpu,ACCESS *result) {
-    result->type = READ;
-    result->address = cpu->TARGET;
-}
-uint8_t bvs_p2(CPU *cpu, uint8_t operand) { 
-    if ((cpu->P & 0x40)) {
-        if (operand <= 127) {
-            cpu->PC = cpu->PC + operand;
-        } else {
-            cpu->PC = cpu->PC - (255 - operand) - 1;
-        }
-    }
-    
-    return operand;
-}
-// Branch on Plus (Negative Clear)
-uint8_t bpl_p1(CPU *cpu,ACCESS *result) {
-    result->type = READ;
-    result->address = cpu->TARGET;
-}
-uint8_t bpl_p2(CPU *cpu, uint8_t operand) { 
-    if (!(cpu->P & 0x80)) {
-        if (operand <= 127) {
-            cpu->PC = cpu->PC + operand;
-        } else {
-            cpu->PC = cpu->PC - (255 - operand) - 1;
-        }
-    }
-    
-    return operand;
-}
-// Branch on Negative (Negative Set)
-uint8_t bmi_p1(CPU *cpu,ACCESS *result) {
-    result->type = READ;
-    result->address = cpu->TARGET;
-}
-uint8_t bmi_p2(CPU *cpu, uint8_t operand) { 
-    if ((cpu->P & 0x80)) {
-        if (operand <= 127) {
-            cpu->PC = cpu->PC + operand;
-        } else {
-            cpu->PC = cpu->PC - (255 - operand);
-        }
-    }
-    
-    return operand;
-}
-// Branch Always
 uint8_t bra_p1(CPU *cpu,ACCESS *result) {
     result->type = READ;
     result->address = cpu->TARGET;
 }
-uint8_t bra_p2(CPU *cpu, uint8_t operand) { 
+uint8_t branch_p2(CPU *cpu, uint8_t operand, uint8_t result) {
+  if (result) {
     if (operand <= 127) {
             cpu->PC = cpu->PC + operand;
     } else {
-        cpu->PC = cpu->PC - (255 - operand) - 1;
+     cpu->PC = cpu->PC - (255 - operand) - 1;
     }
-    
-    return operand;
+  }
+  return result;
 }
-
+// | BCC | Branch on Carry Clear
+uint8_t bcc_p2(CPU *cpu, uint8_t operand) {
+    return branch_p2(cpu,operand, !(cpu->P & 0x01));
+}
+// | BCS | Branch on Carry Set
+uint8_t bcs_p2(CPU *cpu,uint8_t operand) {
+    return branch_p2(cpu,operand,  (cpu->P & 0x01));
+}
+// | BNE | Branch on Not Equal (zero clear)
+uint8_t bne_p2(CPU *cpu,uint8_t operand) {
+    return branch_p2(cpu,operand, !(cpu->P & 0x02) );
+}
+// | BEQ | Branch on Equal (zero set)
+uint8_t beq_p2(CPU *cpu,uint8_t operand) {
+    return branch_p2(cpu,operand, (cpu->P & 0x02) );
+}
+// | BVC | Branch on Overflow Clear (v clear)
+uint8_t bvc_p2(CPU *cpu,uint8_t operand) {
+    return branch_p2(cpu,operand, !(cpu->P & 0x40) );
+}
+// | BVS | Branch on Overflow Set (v clear)
+uint8_t bvs_p2(CPU *cpu,uint8_t operand) {
+    return branch_p2(cpu,operand, (cpu->P & 0x40) );
+}
+// | BPL | Branch on Positive (n clear)
+uint8_t bpl_p2(CPU *cpu,uint8_t operand) {
+    return branch_p2(cpu,operand, !(cpu->P & 0x80) );
+}
+// | BMI | Branch on Minus (n set)
+uint8_t bmi_p2(CPU *cpu,uint8_t operand) {
+    return branch_p2(cpu,operand, (cpu->P & 0x80) );
+}
+// | BRA | Branch ALWAYS
+uint8_t bra_p2(CPU *cpu,uint8_t operand) {
+    return branch_p2(cpu,operand, 1);
+}
 
 /*============================
     STORING
@@ -1049,6 +975,30 @@ uint8_t mode_imd_p2(CPU *cpu, uint8_t operand) {
     phase_2[op_codes[cpu->I]](cpu, operand);
     cpu_opend(cpu);
 }
+
+uint8_t mode_bra_p1(CPU *cpu,ACCESS *result) { 
+    switch (cpu->C) {
+      case 1:
+        cpu->PC += 1;
+        cpu->TARGET = cpu->PC;
+      case 2:
+        phase_1[op_codes[cpu->I]](cpu, result);
+        break;
+    }
+}
+uint8_t mode_bra_p2(CPU *cpu, uint8_t operand) {
+    switch (cpu->C) {
+      case 1:
+        uint8_t branched = phase_2[op_codes[cpu->I]](cpu, operand);
+        if (!branched)
+          cpu_opend(cpu);
+        break;
+      case 2:
+        cpu_opend(cpu);
+        break;
+    }
+}
+
 // Abs -> 4 cycles, 16-bit address + operation
 uint8_t mode_abs_p1(CPU *cpu,ACCESS *result) {
     switch (cpu->C) {
@@ -1189,6 +1139,9 @@ uint8_t mode_rti_p2(CPU *cpu, uint8_t operand) {
         case 3:
             cpu->TARGET += operand << 8; break;
         case 4:
+        case 5:
+            break;
+        case 6:
             cpu->PC = cpu->TARGET-1;
             cpu_opend(cpu);
             break;
@@ -1498,7 +1451,7 @@ int cpu_tick2(CPU *cpu, uint8_t operand) {
             mode_interrupt_p2(cpu, operand); 
             switch (cpu->C) {
                 case 0:
-                    cpu->IRQ = 0;
+                    //cpu->IRQ = 0;
                     cpu->IN_INTERRUPT = 0;
                     break;
                 default:
@@ -1535,18 +1488,18 @@ int w6502_setup() {
     phase_1[ASL] = asl_p1; phase_2[ASL] = asl_p2;
     phase_1[BBR] = bbr_p1; phase_2[BBR] = bbr_p2;
     phase_1[BBS] = bbs_p1; phase_2[BBS] = bbs_p2;
-    phase_1[BCC] = bcc_p1; phase_2[BCC] = bcc_p2;
-    phase_1[BCS] = bcs_p1; phase_2[BCS] = bcs_p2;
-    phase_1[BEQ] = beq_p1; phase_2[BEQ] = beq_p2;
+    phase_1[BCC] = bra_p1; phase_2[BCC] = bcc_p2;
+    phase_1[BCS] = bra_p1; phase_2[BCS] = bcs_p2;
+    phase_1[BEQ] = bra_p1; phase_2[BEQ] = beq_p2;
     phase_1[BIT] = bit_p1; phase_2[BIT] = bit_p2;
-    phase_1[BMI] = bmi_p1; phase_2[BMI] = bmi_p2;
+    phase_1[BMI] = bra_p1; phase_2[BMI] = bmi_p2;
     
-    phase_1[BNE] = bne_p1; phase_2[BNE] = bne_p2;
-    phase_1[BPL] = bpl_p1; phase_2[BPL] = bpl_p2;
+    phase_1[BNE] = bra_p1; phase_2[BNE] = bne_p2;
+    phase_1[BPL] = bra_p1; phase_2[BPL] = bpl_p2;
     phase_1[BRA] = bra_p1; phase_2[BRA] = bra_p2;
     phase_1[BRK] = brk_p1; phase_2[BRK] = brk_p2;
-    phase_1[BVC] = bvc_p1; phase_2[BVC] = bvc_p2;
-    phase_1[BVS] = bvs_p1; phase_2[BVS] = bvs_p2;
+    phase_1[BVC] = bra_p1; phase_2[BVC] = bvc_p2;
+    phase_1[BVS] = bra_p1; phase_2[BVS] = bvs_p2;
     phase_1[CLC] = clc_p1; phase_2[CLC] = clc_p2;
     phase_1[CLD] = cld_p1; phase_2[CLD] = cld_p2;
     phase_1[CLI] = cli_p1; phase_2[CLI] = cli_p2;
@@ -1619,7 +1572,7 @@ int w6502_setup() {
     add_mode_1[ACC] = mode_imp_p1; add_mode_2[ACC] = mode_imp_p2;
     add_mode_1[IMD] = mode_imd_p1; add_mode_2[IMD] = mode_imd_p2;
     add_mode_1[IMP] = mode_imp_p1; add_mode_2[IMP] = mode_imp_p2;
-    add_mode_1[R]   = mode_imd_p1; add_mode_2[R] = mode_imd_p2;
+    add_mode_1[R]   = mode_bra_p1; add_mode_2[R] = mode_bra_p2;
     
     add_mode_1[SH]   = mode_push_p1; add_mode_2[SH] = mode_push_p2;
     add_mode_1[SL]   = mode_pull_p1; add_mode_2[SL] = mode_pull_p2;
