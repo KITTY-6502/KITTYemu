@@ -46,7 +46,7 @@ typedef struct cpu {
 } CPU;
 
 typedef enum mem {
-    WRITE,READ
+    WRITE,READ,RMW,IOP
 } MEM;
 
 typedef struct access {
@@ -86,6 +86,8 @@ typedef enum mode {
     HLD,
     LAST_MODE,
 } MODE;
+
+
 
 
 typedef struct opcode {
@@ -1009,11 +1011,26 @@ uint8_t mode_abs_p1(CPU *cpu,ACCESS *result) {
             result->address = cpu->PC;
             break;
         case 3:
-            cpu->C += 1;
+            if (cpu->MODE == AX || cpu->MODE == AY) {
+                break;
+            } else { cpu->C += 1; }
         case 4:
+            if (cpu->MODE==AX || cpu->MODE==AY) {
+                
+                if ( op_codes[cpu->I] == STA || op_codes[cpu->I] == STZ || cpu->X == 0) { 
+                    break;
+                } else if (
+                    cpu->MODE == AX && ( ((cpu->TARGET+cpu->X) & 0xFF00) != (cpu->TARGET & 0xFF00) )
+                ){break;}
+                else if (
+                    cpu->MODE == AY && ( ((cpu->TARGET+cpu->Y) & 0xFF00) != (cpu->TARGET & 0xFF00) )
+                ){break;}
+                else { cpu->C += 1; }
+            } else { cpu->C+=1;}
+        case 5:
             phase_1[op_codes[cpu->I]](cpu, result); break;
-        case 5: break;
-        case 6:
+        case 6: break;
+        case 7:
             result->value = cpu->DL;
             result->type = WRITE;
             result->address = cpu->TARGET;
@@ -1034,14 +1051,16 @@ uint8_t mode_abs_p2(CPU *cpu, uint8_t operand) {
         case 3:
             break;
         case 4:
+            break;
+        case 5:
             cpu->DL = phase_2[op_codes[cpu->I]](cpu, operand);
             if (!cpu->RMW) {
                 cpu_opend(cpu);
             }
             
             break;
-        case 5: break;
-        case 6:
+        case 6: break;
+        case 7:
             cpu_opend(cpu);
             break;
     }
