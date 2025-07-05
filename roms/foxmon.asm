@@ -18,7 +18,40 @@ _start
 #-----------------------------------------
 # Serial Cart Detection and 16c550 init
 #-----------------------------------------
+
+# ------------------------------------------------------
+# CPU speed calc
+
+wai
+stz <0>; stz <1>; stz <2>
+clc
+sed
+wai
+
+# Should take 200 cycles per loop
+# 26+loops*5-1
+
+__calcloop
+  ldx 35                     # 2
+  ___delay
+  dec X; bne (delay)          # loops*(2+3)-1
+  # Calculation (24)
+  lda <0>; adc 1; sta <0>   # 3+2+3 (8)
+  lda <1>; adc 0; sta <1>   # 3+2+3 (8)
+  cli                         # 2
+lda <2>; beq (calcloop)      # 3+3   (6)
+cld
+lda <1>; and $F0; lsr A; lsr A; lsr A; lsr A; clc; adc $30
+  sta [CHR+$47]
+lda <1>; and $0F; clc; adc $30;
+  sta [CHR+$48]
+lda <0>; and $F0; lsr A; lsr A; lsr A; lsr A; clc; adc $30
+  sta [CHR+$4A]
+lda <0>; and $0F; clc; adc $30;
+  sta [CHR+$4B]
+
 stz <serial_active>
+
 _serialcheck
     # change to cart bank
     lda $40; sta [$70D0]

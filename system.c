@@ -441,18 +441,25 @@ int main(int argc, char *argv[])
         "KITTY Emu",
         SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
         screen_width * 2, screen_height* 2,
-        SDL_WINDOW_SHOWN
+        SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
     );
     SDL_Renderer* renderer = SDL_CreateRenderer(
         window,
         -1,
         0
     );
+    SDL_RenderSetLogicalSize(renderer,screen_width,screen_height);
+    SDL_RenderSetIntegerScale(renderer,1);
+    
+    // This needs to be done after the creation of the renderer due to a bug in older sdl2 versions
+    // https://github.com/libsdl-org/SDL/issues/8805
+    SDL_SetWindowMinimumSize(window,screen_width,screen_height);
+    
     SDL_Texture* system_screen = SDL_CreateTexture(
         renderer,
         SDL_PIXELFORMAT_RGBA32,
         SDL_TEXTUREACCESS_STREAMING,
-        256,256
+        screen_width,screen_height
     ); 
     
     SDL_Surface* font_texture = IMG_Load("font.png");
